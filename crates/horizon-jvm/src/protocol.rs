@@ -43,6 +43,8 @@ pub const TAG_DISCOVER_RESULT: u8 = 6;
 pub const TAG_LOG: u8 = 7;
 pub const TAG_FATAL: u8 = 8;
 pub const TAG_SHUTDOWN: u8 = 9;
+pub const TAG_REGISTRY_SNAPSHOT: u8 = 10;
+pub const TAG_EVENT: u8 = 11;
 
 /// Client or server, the same choice `--side` makes and Fabric's `EnvType` models.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -131,6 +133,15 @@ pub enum Frame {
     Shutdown {
         code: i32,
     },
+    /// Engine → host: the Rust block/item/entity registries, as JSON. Phase 3 bridge.
+    RegistrySnapshot {
+        json: String,
+    },
+    /// Engine → host: a named event with a JSON payload. Phase 3 bridge.
+    Event {
+        name: String,
+        payload: String,
+    },
 }
 
 impl Frame {
@@ -145,6 +156,8 @@ impl Frame {
             Self::Log { .. } => TAG_LOG,
             Self::Fatal { .. } => TAG_FATAL,
             Self::Shutdown { .. } => TAG_SHUTDOWN,
+            Self::RegistrySnapshot { .. } => TAG_REGISTRY_SNAPSHOT,
+            Self::Event { .. } => TAG_EVENT,
         }
     }
 
@@ -159,6 +172,8 @@ impl Frame {
             Self::Log { .. } => "log",
             Self::Fatal { .. } => "fatal",
             Self::Shutdown { .. } => "shutdown",
+            Self::RegistrySnapshot { .. } => "registry-snapshot",
+            Self::Event { .. } => "event",
         }
     }
 
@@ -212,6 +227,11 @@ impl Frame {
             }
             Self::Fatal { message } => out.string(message)?,
             Self::Shutdown { code } => out.u32(*code as u32),
+            Self::RegistrySnapshot { json } => out.string(json)?,
+            Self::Event { name, payload } => {
+                out.string(name)?;
+                out.string(payload)?;
+            }
         }
 
         Ok(out.bytes)
@@ -275,6 +295,13 @@ impl Frame {
             },
             TAG_SHUTDOWN => Self::Shutdown {
                 code: input.u32()? as i32,
+            },
+            TAG_REGISTRY_SNAPSHOT => Self::RegistrySnapshot {
+                json: input.string()?,
+            },
+            TAG_EVENT => Self::Event {
+                name: input.string()?,
+                payload: input.string()?,
             },
             other => return Err(ProtocolError::UnknownTag(other)),
         };

@@ -90,6 +90,9 @@ public final class Main {
                     discover(wire, discover);
                 } else if (frame instanceof Wire.Shutdown shutdown) {
                     System.exit(shutdown.code());
+                } else if (frame instanceof Wire.RegistrySnapshot snapshot) {
+                    System.err.println("horizon host: received a registry snapshot of "
+                            + snapshot.json().length() + " bytes");
                 } else {
                     wire.write(new Wire.Log(2, "host ignored " + Wire.describe(frame)));
                 }

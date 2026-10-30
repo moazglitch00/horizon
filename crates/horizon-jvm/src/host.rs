@@ -315,7 +315,7 @@ impl JavaHost {
         }
     }
 
-    /// Runs Fabric Loader's discovery and resolution over `mods_dir`.
+    /// Sends a registry snapshot to the host. Phase 3 bridge: Rust's registries become visible\n    /// to Java mod code.\n    pub fn send_registry_snapshot(&mut self, json: &str) -> Result<(), HostError> {\n        self.send(&Frame::RegistrySnapshot {\n            json: json.to_string(),\n        })\n    }\n\n    /// Sends a named event with a JSON payload. Phase 3 bridge.\n    pub fn send_event(&mut self, name: &str, payload: &str) -> Result<(), HostError> {\n        self.send(&Frame::Event {\n            name: name.to_string(),\n            payload: payload.to_string(),\n        })\n    }\n\n    /// Runs Fabric Loader's discovery and resolution over `mods_dir`.
     pub fn discover(&mut self, mods_dir: &Path) -> Result<Discovery, HostError> {
         self.send(&Discover {
             mods_dir: mods_dir.to_string_lossy().into_owned(),

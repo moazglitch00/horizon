@@ -19,5 +19,9 @@ thiserror = "2"
 name = "horizon-fabric-probe"
 path = "src/main.rs"
 
+[[bin]]
+name = "horizon-registry-dump"
+path = "src/bin/registry_dump.rs"
+
 [lints]
 workspace = true

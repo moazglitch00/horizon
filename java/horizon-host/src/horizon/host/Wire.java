@@ -36,6 +36,8 @@ public final class Wire implements Closeable {
     public static final int TAG_LOG = 7;
     public static final int TAG_FATAL = 8;
     public static final int TAG_SHUTDOWN = 9;
+    public static final int TAG_REGISTRY_SNAPSHOT = 10;
+    public static final int TAG_EVENT = 11;
 
     /** Client or server, as the engine passes {@code --side} and Fabric's {@code EnvType}. */
     public static final int SIDE_CLIENT = 0;
@@ -43,7 +45,7 @@ public final class Wire implements Closeable {
 
     /** A message on the pipe. */
     public sealed interface Frame permits Hello, HelloAck, Ping, Pong, Discover, DiscoverResult,
-            Log, Fatal, Shutdown {
+            Log, Fatal, Shutdown, RegistrySnapshot, Event {
     }
 
     public record Hello(int protocol, String host, String loader, String gameVersion, int side)
@@ -73,6 +75,12 @@ public final class Wire implements Closeable {
     }
 
     public record Shutdown(int code) implements Frame {
+    }
+
+    public record RegistrySnapshot(String json) implements Frame {
+    }
+
+    public record Event(String name, String payload) implements Frame {
     }
 
     public static boolean isControl(Frame frame) {
@@ -149,6 +157,8 @@ public final class Wire implements Closeable {
             case Log log -> "log(" + log.level() + ")";
             case Fatal fatal -> "fatal";
             case Shutdown shutdown -> "shutdown(" + shutdown.code() + ")";
+            case RegistrySnapshot snapshot -> "registry-snapshot(" + snapshot.json().length() + " chars)";
+            case Event event -> "event(" + event.name() + ")";
         };
     }
 
@@ -200,6 +210,15 @@ public final class Wire implements Closeable {
                 out.u8(TAG_SHUTDOWN);
                 out.u32(shutdown.code());
             }
+            case RegistrySnapshot snapshot -> {
+                out.u8(TAG_REGISTRY_SNAPSHOT);
+                out.string(snapshot.json());
+            }
+            case Event event -> {
+                out.u8(TAG_EVENT);
+                out.string(event.name());
+                out.string(event.payload());
+            }
         }
 
         return out.toByteArray();
@@ -223,6 +242,8 @@ public final class Wire implements Closeable {
             case TAG_LOG -> new Log(in.u8(), in.string());
             case TAG_FATAL -> new Fatal(in.string());
             case TAG_SHUTDOWN -> new Shutdown(in.u32());
+            case TAG_REGISTRY_SNAPSHOT -> new RegistrySnapshot(in.string());
+            case TAG_EVENT -> new Event(in.string(), in.string());
             default -> throw new IOException("unknown frame tag " + tag);
         };
 
