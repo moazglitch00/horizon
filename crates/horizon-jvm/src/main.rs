@@ -38,6 +38,7 @@ fn main() -> ExitCode {
 
 struct Args {
     libs: PathBuf,
+    resources: Option<PathBuf>,
     mods: Option<PathBuf>,
     game_dir: PathBuf,
     game_version: String,
@@ -81,6 +82,7 @@ fn run(args: &[String]) -> Result<ExitCode, String> {
     );
     config.pings = parsed.pings;
     config.log = parsed.log.clone();
+    config.resources = parsed.resources.clone();
 
     let probe = Probe::run(config).map_err(|e| e.to_string())?;
 
@@ -127,6 +129,7 @@ fn parse(args: &[String]) -> Result<Args, String> {
     let game_version = horizon_core::version::VERSION_ID.to_string();
     let mut parsed = Args {
         libs: PathBuf::new(),
+        resources: None,
         mods: None,
         game_dir: horizon_jvm::discovery::default_game_dir(),
         game_version,
@@ -144,6 +147,7 @@ fn parse(args: &[String]) -> Result<Args, String> {
     while let Some(arg) = args.get(index) {
         match arg.as_str() {
             "--libs" => parsed.libs = next(args, &mut index)?.into(),
+            "--resources" => parsed.resources = Some(next(args, &mut index)?.into()),
             "--mods" => parsed.mods = Some(next(args, &mut index)?.into()),
             "--game-dir" => parsed.game_dir = next(args, &mut index)?.into(),
             "--game-version" => parsed.game_version = next(args, &mut index)?,

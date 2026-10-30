@@ -14,7 +14,7 @@ use crate::libs::LibSet;
 use crate::protocol::Side;
 use horizon_prepare::java::Jdk;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 use thiserror::Error;
 
@@ -203,6 +203,7 @@ pub struct ProbeConfig {
     /// Control round trips measured after the handshake. Zero skips the check.
     pub pings: usize,
     pub log: Option<PathBuf>,
+    pub resources: Option<PathBuf>,
     pub startup_timeout: Duration,
     pub frame_timeout: Duration,
     pub discover_timeout: Duration,
@@ -229,6 +230,7 @@ impl ProbeConfig {
             side,
             pings: 5,
             log: None,
+            resources: None,
             startup_timeout: Duration::from_secs(30),
             frame_timeout: Duration::from_secs(10),
             discover_timeout: Duration::from_secs(120),
@@ -323,6 +325,14 @@ impl Probe {
         let pings = PingStats::from(&samples);
         let hello = host.hello().clone();
 
+        // Phase 3 bridge: if prepared resources are available, dump the Rust registry and
+        // send it to the host before discovery, so Java mod code can see Rust's world.
+        if let Some(resources) = &config.resources {
+            if let Some(snapshot) = dump_registry(resources) {
+                host.send_registry_snapshot(&snapshot)?;
+            }
+        }
+
         let discover_start = Instant::now();
         let discovery = host.discover(&config.mods_dir)?;
         let discover = discover_start.elapsed();
@@ -368,7 +378,32 @@ pub fn default_game_dir() -> PathBuf {
     std::env::temp_dir().join("horizon-jvm-game")
 }
 
-#[cfg(test)]
+/// Runs the `horizon-registry-dump` binary (a sibling of the current executable) and returns
+/// its stdout, or `None` if it could not be found or failed.
+fn dump_registry(resources: &Path) -> Option<String> {
+    let current = std::env::current_exe().ok()?;
+    let dump = current.with_file_name(if cfg!(windows) {
+        "horizon-registry-dump.exe"
+    } else {
+        "horizon-registry-dump"
+    });
+
+    if !dump.is_file() {
+        return None;
+    }
+
+    let output = std::process::Command::new(&dump)
+        .arg("--resources")
+        .arg(resources)
+        .output()
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    String::from_utf8(output.stdout).ok()
+}
 mod tests {
     use super::*;
 
