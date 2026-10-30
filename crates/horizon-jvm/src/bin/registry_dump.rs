@@ -2,10 +2,12 @@
 //!
 //! Phase 3 bridge: the Rust engine owns the block/item registries; this binary turns the prepared
 //! `facts.json` into the JSON payload that travels over the `registry-snapshot` frame to the Java
-//! host. It is intentionally a reader, not a second registry: it never invents identities.
+//! host. It reads through `horizon_world::registry::BlockRegistry`, so the snapshot is the same
+//! identity the game uses, not a second parser.
 
-use serde_json::Value;
-use std::fs;
+use horizon_world::registry::BlockRegistry;
+use std::fs::File;
+use std::io::BufReader;
 use std::path::PathBuf;
 
 fn main() {
@@ -30,41 +32,26 @@ fn main() {
     };
 
     let facts_path = resources.join("facts.json");
-    let bytes = match fs::read(&facts_path) {
-        Ok(b) => b,
+    let file = match File::open(&facts_path) {
+        Ok(f) => f,
         Err(e) => {
             eprintln!("cannot read {}: {e}", facts_path.display());
             std::process::exit(1);
         }
     };
 
-    let facts: Value = match serde_json::from_slice(&bytes) {
-        Ok(v) => v,
+    let registry = match BlockRegistry::from_facts_json(BufReader::new(file)) {
+        Ok(r) => r,
         Err(e) => {
-            eprintln!("{} is not valid JSON: {e}", facts_path.display());
+            eprintln!("{} is not a valid block registry: {e}", facts_path.display());
             std::process::exit(1);
         }
     };
 
-    let states = facts.get("states").and_then(|s| s.as_array()).cloned().unwrap_or_default();
-
-    // Collect distinct block-state names in registry order.
-    let mut names: Vec<String> = Vec::new();
-    let mut seen = std::collections::BTreeSet::new();
-    for row in &states {
-        let state = row.as_array().and_then(|r| r.get(4));
-        if let Some(state) = state {
-            if let Some(id) = state.get("id").and_then(|v| v.as_str()) {
-                if seen.insert(id.to_string()) {
-                    names.push(id.to_string());
-                }
-            }
-        }
-    }
-
+    let names = registry.block_names();
     let snapshot = serde_json::json!({
         "kind": "block-states",
-        "count": states.len(),
+        "stateCount": registry.len(),
         "distinctBlocks": names.len(),
         "blocks": names,
     });

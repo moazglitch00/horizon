@@ -133,6 +133,16 @@ impl BlockRegistry {
     pub fn len(&self) -> usize {
         self.states.len()
     }
+
+    /// The block names that have a default state (one per block type).
+    pub fn block_names(&self) -> Vec<&str> {
+        self.defaults.keys().map(String::as_str).collect()
+    }
+
+    /// The default state id for a block name, if it has one.
+    pub fn default_state_id(&self, name: &str) -> Option<BlockStateId> {
+        self.default_state(name)
+    }
     pub fn is_empty(&self) -> bool {
         self.states.is_empty()
     }

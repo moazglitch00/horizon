@@ -1286,6 +1286,7 @@ dependencies = [
  "horizon-core",
  "horizon-fabric",
  "horizon-prepare",
+ "horizon-world",
  "serde",
  "serde_json",
  "sha2",
