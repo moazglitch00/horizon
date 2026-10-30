@@ -4,10 +4,9 @@ This page is the only place compatibility work may claim a cost. A number here h
 build, a command and a date. Targets are marked **target** and are not measurements; when the
 measurement exists, the target row is replaced rather than kept beside it.
 
-Status: **Phase 1 measured; Phases 2+ not measured yet.** The JVM host, the loader probe and the
-event bridge do not exist, so this page currently answers one question — what does reading a real
-mod folder cost — and leaves the rest explicitly empty. That is deliberate: an invented IPC budget
-would become a design constraint nobody verified.
+Status: **Phase 1 and Phase 2 measured.** Phase 1: reading five real mod jars. Phase 2: the Java
+host (spawn, handshake, Fabric Loader discovery, control round-trip, clean shutdown). Phases 3+
+are not measured yet.
 
 ## Machine and method
 
@@ -17,7 +16,7 @@ would become a design constraint nobody verified.
 | RAM | 7.3 GiB |
 | OS | Windows 11 Home 10.0.26200 |
 | Rust | rustc 1.99.1, `x86_64-pc-windows-gnu`, release profile |
-| JVM | Oracle JDK 21.0.5 (`C:\Program Files\Java\jdk-21`) |
+| JVM (measured) | Oracle JDK 21.0.5 (`C:\Program Files\Java\jdk-21`) for the Phase 1 JVM floor; Microsoft OpenJDK 25.0.5 (`C:\Program Files\Microsoft\jdk-25.0.5.21-hotspot`) for the Phase 2 host |
 | Date | 2026-10-30 |
 
 Method: each run is a fresh process, launched and timed with .NET `Stopwatch` around
@@ -82,6 +81,41 @@ measurements are **not** in this table:
 - Fabric Loader startup is not measured. Loader needs a game provider and would fail before doing
   useful work; measuring it without Phase 2's host would measure the failure path, not the loader.
 
+## Measured: the Java host (Phase 2)
+
+Input: the five pinned mod jars above, copied to one `mods/` folder (58 mods after expansion), run
+through `horizon-fabric-probe --libs <fabric-libs> --mods <mods> --game-version 26.3 --side client
+--pings 5` against the Microsoft OpenJDK 25 install, n = 5 (release build of the probe):
+
+| Measurement | Result |
+|---|---|
+| Host source compile (cold, `javac --release 21`) | **~2.0 s** once; **~1 ms** when the source-hash cache directory already holds the classes |
+| Host spawn → `hello` frame | median **~0.55 s** (min 0.52, max 0.91, n = 5); JVM floor ~0.2 s, the rest is Loader on the class path |
+| Discovery report (`discover` request → `discover-result`) | median **~0.30 s** (min 0.22, max 0.37, n = 5); 53 mods, 53 in load order, 0 errors, 0 warnings |
+| Control round-trip `ping` → `pong` | n = 5 per run, median of medians **~1 ms** (min 0.06 ms, max 8.9 ms single sample; p99 not measured) |
+| Clean shutdown (`shutdown` → process exit) | median **~0.04 s** (min 0.02, max 0.05, n = 5) |
+| Loader verdict | ok, 53 mods (49 from `mods/` + `fabricloader` + `mixinextras` from the class path), 0 errors, 0 warnings |
+| Cross-check vs Phase 1 | mod id sets agree exactly (49 ids) after removing Loader's two classpath-provided mods; load order differs (topological order is not unique) |
+| Host idle RSS | not measured (Phase 3+) |
+
+The host's frame protocol was exercised by `cargo test -p horizon-jvm`: 6 unit + 10 protocol
+round-trip + 4 host integration tests (handshake, ping ×3, discover, shutdown, startup timeout,
+missing main class, drop-kills-the-JVM), all green. An oversized frame and a truncated length are
+rejected before any read, and a control frame over 4 KiB is refused before it reaches the pipe.
+
+Caveats:
+
+- **One machine, one folder, debug samples.** The medians above come from 5 runs of a debug
+  build of the probe (`target/debug`); the release build is expected to be faster but was not
+  benchmarked separately. Phase 9's harness must re-measure on the release binary with 20 runs.
+- **Startup variance is real**: 0.52–0.91 s across five runs, most likely antivirus scanning the
+  freshly spawned JVM. The 1.5 s p95 target is not breached but is not comfortable.
+- **Discovery is cheap relative to startup** (~0.3 s vs ~0.55 s), so the cost of a re-check on
+  the Mods page is dominated by spawning the host, not by Loader.
+- **No crash-detection timing yet.** SIGKILL-mid-run was exercised by the integration test (clean
+  `Exited` error) but not timed; the 2 s target is unverified.
+- **Host idle RSS not measured.**
+
 ## Budgets for Phase 2 (targets)
 
 These are constraints the host must satisfy, agreed before implementation so the protocol is not
@@ -116,7 +150,6 @@ this file, not a silent edit.
 
 ## What is not measured yet, and will not be guessed
 
-- Fabric Loader discovery cost (Phase 2).
 - Registry snapshot and delta size for a real world (Phase 3).
 - Per-tick cost of the event bridge with 50 mods (Phase 3/9).
 - Mixin apply cost at class load (Phase 6, compatibility mode).

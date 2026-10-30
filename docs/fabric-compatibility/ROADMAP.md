@@ -41,36 +41,44 @@ also turned three Loader rules from assumptions into code:
 
 **Explicitly not**: no JVM, no Fabric Loader, no claim that any mod runs.
 
-## Phase 2 — The Java host (no Minecraft classes yet)
+## Phase 2 — The Java host (no Minecraft classes yet) — done
 
 **Entry**: Phase 1.
 
-**Deliverable**: `crates/horizon-jvm` + `java/horizon-host/`.
+**Deliverable**: `crates/horizon-jvm` + `java/horizon-host/` (committed).
 
-- JDK discovery through `horizon-prepare::java::find_runtime` (Java 25 for 26.3, never the
-  player's random `java`), version checked.
-- Spawn a host process, handshake with a versioned frame protocol over a pipe, heartbeat, timeout,
-  clean shutdown, restart after a crash, crash log with the host's stderr.
-- Host loads Fabric Loader's **discovery** path only (no game launch): it reports the loader's own
-  view of the mod set. This is a cross-check of Phase 1, not a second implementation.
-- **A minimal Horizon `GameProvider` is required even for discovery.** Verified against
-  `fabric-loader-0.19.5.jar` with `javap` and the 0.19.5 source: `ModDiscoverer.discoverMods` calls
-  `loader.getGameProvider().getBuiltinMods()` and reads `FabricLoaderImpl.INSTANCE` internally;
-  `ModCandidateImpl`'s factories are package-private, so candidates cannot be built without the
-  discoverer. The provider must answer `getGameId()` (`minecraft`), `getGameName()`, the raw and
-  normalized game version (from `horizon-core`), and `getBuiltinMods()` (the game jar set, as
-  Loader expects). The other methods (`locateGame`, `launch`, transformers) throw
-  `UnsupportedOperationException` naming the phase that implements them — an explicit boundary, not
-  an empty stub, and Phase 6 is where they become real.
-  This correction was found before writing host code; the earlier "no game provider" wording was
-  wrong about Loader's API.
-- Fabric Loader and libraries come from the existing pinned lock
-  (`tools/benchmark-deps/fabric.lock.json`) with SHA-256 verification; nothing is vendored.
-- `horizon-client --fabric-probe <dir>` prints the loader's report; the launcher shows it on the
-  Mods page under a "Check with Fabric Loader" row.
+- JDK discovery through `horizon-prepare::java::find` (Java 25 for 26.3, never the player's
+  random `java`), version checked. `horizon-fabric-probe` refuses to start without a JDK 25.
+- Spawn a host process, handshake with a versioned frame protocol over a pipe (u32 LE length
+  prefix, u8 tag, u32/u64 LE, u32-length UTF-8 strings; 8 MiB max frame, 4 KiB max control
+  frame; protocol version 1), heartbeat (`ping`/`pong`), timeout, clean shutdown, crash log with
+  the host's stderr tail. A dropped host kills its JVM (no orphaned process).
+- Host loads Fabric Loader's **discovery** path only (no game launch): it reports Loader's own
+  view of the mod set. This is a cross-check of Phase 1, not a second implementation. Real-jar
+  result: **Loader reports 53 mods (49 file mods + fabricloader + mixinextras), 53 in load order,
+  0 errors, 0 warnings** against the 5 pinned jars; Phase 1 reports 58 mods (5 jars expanded into
+  58 entries), 49 loading, 0 errors, 0 warnings. After removing Loader's two classpath-provided
+  mods, the mod id sets agree exactly (49 ids); load order differs, which is expected because a
+  topological order is not unique (Phase 1 is dependency-first, Loader is id-ordered within a
+  level).
+- **A minimal Horizon `GameProvider` is required even for discovery** (see ROADMAP correction
+  above; implemented in `HorizonGameProvider.java`). It supplies `minecraft` as the only builtin
+  mod; `fabricloader` and `mixinextras` arrive through `ClasspathModCandidateFinder`, exactly as
+  the real launcher discovers them. Launch methods throw phase-tagged
+  `UnsupportedOperationException`.
+- Fabric Loader (0.19.5) and its 6 libraries come from the pinned lock
+  (`tools/benchmark-deps/fabric.lock.json`) with SHA-256 verification; nothing is vendored and
+  nothing is downloaded by Horizon. `LibsError` lists every missing or wrong file with its
+  expected hash.
+- `horizon-fabric-probe` (the `crates/horizon-jvm` binary) prints the loader's report and the
+  comparison; `--json` emits both. Exit code 0 when Loader accepted the folder and the mod sets
+  agree.
+- Host source is compiled with `javac --release 21` into a source-hash cache directory, so a
+  build that did not touch the host starts it from cache.
 
-**Exit**: a test starts a real JVM, gets a report for a fixture mods folder, kills the host mid-run
-and observes a clean error; startup cost measured and recorded in PERFORMANCE.md.
+**Exit**: tests start a real JVM, get a report for a fixture mods folder, kill the host mid-run
+and observe a clean error; startup cost measured and recorded in PERFORMANCE.md.
+`cargo test -p horizon-jvm` is green: 6 unit + 10 protocol + 4 host integration tests.
 
 **Explicitly not**: Fabric API, mixins applied to anything, a world.
 

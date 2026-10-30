@@ -1,0 +1,23 @@
+[package]
+name = "horizon-jvm"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "The Horizon Java host: a supervised JVM child process and its framed pipe (docs/fabric-compatibility/ROADMAP.md phase 2)"
+
+[dependencies]
+horizon-core = { path = "../horizon-core" }
+horizon-fabric = { path = "../horizon-fabric" }
+horizon-prepare = { path = "../horizon-prepare" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+thiserror = "2"
+
+[[bin]]
+name = "horizon-fabric-probe"
+path = "src/main.rs"
+
+[lints]
+workspace = true

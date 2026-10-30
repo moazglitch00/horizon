@@ -1280,6 +1280,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "horizon-jvm"
+version = "0.1.0"
+dependencies = [
+ "horizon-core",
+ "horizon-fabric",
+ "horizon-prepare",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "horizon-mods"
 version = "0.1.0"
 dependencies = [
