@@ -1232,6 +1232,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "horizon-fabric"
+version = "0.1.0"
+dependencies = [
+ "horizon-core",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "zip",
+]
+
+[[package]]
 name = "horizon-friends"
 version = "0.1.0"
 dependencies = [

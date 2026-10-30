@@ -1,0 +1,21 @@
+[package]
+name = "horizon-fabric"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Fabric mod jars: metadata, version predicates and a load plan, without a JVM (docs/fabric-compatibility/ARCHITECTURE.md)"
+
+[dependencies]
+horizon-core = { path = "../horizon-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+
+[[bin]]
+name = "horizon-fabric"
+path = "src/main.rs"
+
+[lints]
+workspace = true
