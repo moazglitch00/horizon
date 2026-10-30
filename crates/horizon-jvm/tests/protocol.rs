@@ -37,6 +37,13 @@ fn every_frame_round_trips_through_encode_and_decode() {
             message: "boom".to_string(),
         },
         Frame::Shutdown { code: -1 },
+        Frame::RegistrySnapshot {
+            json: "{\"kind\":\"block-states\",\"count\":2}".to_string(),
+        },
+        Frame::Event {
+            name: "block-placed".to_string(),
+            payload: "{\"x\":1}".to_string(),
+        },
     ];
 
     for frame in frames {
