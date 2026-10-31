@@ -404,6 +404,8 @@ fn dump_registry(resources: &Path) -> Option<String> {
 
     String::from_utf8(output.stdout).ok()
 }
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
