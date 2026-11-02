@@ -93,6 +93,8 @@ public final class Main {
                 } else if (frame instanceof Wire.RegistrySnapshot snapshot) {
                     System.err.println("horizon host: received a registry snapshot of "
                             + snapshot.json().length() + " bytes");
+                } else if (frame instanceof Wire.Event event) {
+                    System.err.println("horizon host: received event '" + event.name() + "'");
                 } else {
                     wire.write(new Wire.Log(2, "host ignored " + Wire.describe(frame)));
                 }
