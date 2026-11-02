@@ -52,8 +52,8 @@ pub const SOURCES: &[(&str, &str)] = &[
         include_str!("../../../java/horizon-host/src/horizon/host/HeadlessLauncher.java"),
     ),
     (
-        "horizon/host/HorizonGameProvider.java",
-        include_str!("../../../java/horizon-host/src/horizon/host/HorizonGameProvider.java"),
+        "net/minecraft/util/Identifier.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/util/Identifier.java"),
     ),
 ];
 
