@@ -45,6 +45,10 @@ pub const TAG_FATAL: u8 = 8;
 pub const TAG_SHUTDOWN: u8 = 9;
 pub const TAG_REGISTRY_SNAPSHOT: u8 = 10;
 pub const TAG_EVENT: u8 = 11;
+pub const TAG_LOAD_CLASS: u8 = 12;
+pub const TAG_CLASS_LOADED: u8 = 13;
+pub const TAG_INVOKE_METHOD: u8 = 14;
+pub const TAG_INVOKE_RESULT: u8 = 15;
 
 /// Client or server, the same choice `--side` makes and Fabric's `EnvType` models.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -142,6 +146,25 @@ pub enum Frame {
         name: String,
         payload: String,
     },
+    /// Engine → host: load a class from a JAR. Phase 1 of fabric-runtime.
+    LoadClass {
+        jar_path: String,
+        class_name: String,
+    },
+    /// Host → engine: class loaded successfully.
+    ClassLoaded {
+        class_name: String,
+    },
+    /// Engine → host: invoke a static method. Phase 1 of fabric-runtime.
+    InvokeMethod {
+        class_name: String,
+        method_name: String,
+        args_json: String,
+    },
+    /// Host → engine: method invocation result. Phase 1 of fabric-runtime.
+    InvokeResult {
+        result_json: String,
+    },
 }
 
 impl Frame {
@@ -158,6 +181,10 @@ impl Frame {
             Self::Shutdown { .. } => TAG_SHUTDOWN,
             Self::RegistrySnapshot { .. } => TAG_REGISTRY_SNAPSHOT,
             Self::Event { .. } => TAG_EVENT,
+            Self::LoadClass { .. } => TAG_LOAD_CLASS,
+            Self::ClassLoaded { .. } => TAG_CLASS_LOADED,
+            Self::InvokeMethod { .. } => TAG_INVOKE_METHOD,
+            Self::InvokeResult { .. } => TAG_INVOKE_RESULT,
         }
     }
 
@@ -174,6 +201,10 @@ impl Frame {
             Self::Shutdown { .. } => "shutdown",
             Self::RegistrySnapshot { .. } => "registry-snapshot",
             Self::Event { .. } => "event",
+            Self::LoadClass { .. } => "load-class",
+            Self::ClassLoaded { .. } => "class-loaded",
+            Self::InvokeMethod { .. } => "invoke-method",
+            Self::InvokeResult { .. } => "invoke-result",
         }
     }
 
@@ -232,6 +263,21 @@ impl Frame {
                 out.string(name)?;
                 out.string(payload)?;
             }
+            Self::LoadClass { jar_path, class_name } => {
+                out.string(jar_path)?;
+                out.string(class_name)?;
+            }
+            Self::ClassLoaded { class_name } => out.string(class_name)?,
+            Self::InvokeMethod {
+                class_name,
+                method_name,
+                args_json,
+            } => {
+                out.string(class_name)?;
+                out.string(method_name)?;
+                out.string(args_json)?;
+            }
+            Self::InvokeResult { result_json } => out.string(result_json)?,
         }
 
         Ok(out.bytes)
@@ -302,6 +348,21 @@ impl Frame {
             TAG_EVENT => Self::Event {
                 name: input.string()?,
                 payload: input.string()?,
+            },
+            TAG_LOAD_CLASS => Self::LoadClass {
+                jar_path: input.string()?,
+                class_name: input.string()?,
+            },
+            TAG_CLASS_LOADED => Self::ClassLoaded {
+                class_name: input.string()?,
+            },
+            TAG_INVOKE_METHOD => Self::InvokeMethod {
+                class_name: input.string()?,
+                method_name: input.string()?,
+                args_json: input.string()?,
+            },
+            TAG_INVOKE_RESULT => Self::InvokeResult {
+                result_json: input.string()?,
             },
             other => return Err(ProtocolError::UnknownTag(other)),
         };

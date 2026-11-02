@@ -331,6 +331,51 @@ impl JavaHost {
         })
     }
 
+    /// Loads a class from a JAR. Phase 1 of fabric-runtime: real JVM integration.
+    pub fn load_class(&mut self, jar_path: &str, class_name: &str) -> Result<String, HostError> {
+        self.send(&Frame::LoadClass {
+            jar_path: jar_path.to_string(),
+            class_name: class_name.to_string(),
+        })?;
+        loop {
+            let frame = self.next_frame(self.config.frame_timeout, "class-loaded")?;
+            match frame {
+                Frame::ClassLoaded { class_name } => return Ok(class_name),
+                Frame::Fatal { message } => return Err(HostError::Fatal(message)),
+                Frame::Log { .. } => continue,
+                other => {
+                    return Err(HostError::Unexpected {
+                        expected: "class-loaded",
+                        got: other.name().to_string(),
+                    });
+                }
+            }
+        }
+    }
+
+    /// Invokes a static no-arg method. Phase 1 of fabric-runtime.
+    pub fn invoke_method(&mut self, class_name: &str, method_name: &str) -> Result<String, HostError> {
+        self.send(&Frame::InvokeMethod {
+            class_name: class_name.to_string(),
+            method_name: method_name.to_string(),
+            args_json: "[]".to_string(),
+        })?;
+        loop {
+            let frame = self.next_frame(self.config.frame_timeout, "invoke-result")?;
+            match frame {
+                Frame::InvokeResult { result_json } => return Ok(result_json),
+                Frame::Fatal { message } => return Err(HostError::Fatal(message)),
+                Frame::Log { .. } => continue,
+                other => {
+                    return Err(HostError::Unexpected {
+                        expected: "invoke-result",
+                        got: other.name().to_string(),
+                    });
+                }
+            }
+        }
+    }
+
     /// Runs Fabric Loader's discovery and resolution over `mods_dir`.
     pub fn discover(&mut self, mods_dir: &Path) -> Result<Discovery, HostError> {
         self.send(&Discover {

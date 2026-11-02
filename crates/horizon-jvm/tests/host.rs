@@ -160,10 +160,44 @@ fn a_dropped_host_does_not_survive() {
     config.main_class = "SleepHost".to_string();
     config.startup_timeout = Duration::from_millis(200);
 
-    // SleepHost never sends hello, so start times out. Drop the (failed) config's child? start
-    // returns before spawning? No — spawn happens, then timeout. The child must be killed.
     let _ = JavaHost::start(config);
-    // Give the OS a moment to reap.
     std::thread::sleep(Duration::from_millis(200));
-    // No assertion on process count (hard to count); the test exists to exercise Drop without panic.
+}
+
+#[test]
+fn load_class_and_invoke_method() {
+    let jdk = jdk();
+    let root = std::env::temp_dir().join(format!("horizon-jvm-cls-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    std::fs::create_dir_all(&root).unwrap();
+
+    let wire = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..").join("..").join("java").join("horizon-host").join("src")
+        .join("horizon").join("host").join("Wire.java");
+    let echo = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests").join("fixtures").join("EchoHost.java");
+    let horizon_test = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests").join("fixtures").join("HorizonTest.java");
+
+    let output = Command::new(&jdk.javac)
+        .arg("--release").arg("21").arg("-encoding").arg("UTF-8")
+        .arg("-proc:none").arg("-d").arg(&root)
+        .arg(&wire).arg(&echo).arg(&horizon_test)
+        .output().expect("javac");
+    assert!(output.status.success(), "javac: {}", String::from_utf8_lossy(&output.stderr));
+
+    let game_dir = temp_game_dir("cls");
+    let mut config = HostConfig::new(
+        jdk.java.clone(), &root, Vec::new(), &game_dir, "26.3", Side::Client,
+    );
+    config.main_class = "EchoHost".to_string();
+    config.startup_timeout = Duration::from_secs(15);
+    config.frame_timeout = Duration::from_secs(5);
+
+    let mut host = JavaHost::start(config).expect("start");
+    let loaded = host.load_class("", "HorizonTest").unwrap();
+    assert_eq!(loaded, "HorizonTest");
+    let result = host.invoke_method("HorizonTest", "hello").unwrap();
+    assert_eq!(result, "Hello from Java!");
+    host.shutdown(0).unwrap();
 }

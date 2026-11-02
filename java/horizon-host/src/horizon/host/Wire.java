@@ -38,6 +38,10 @@ public final class Wire implements Closeable {
     public static final int TAG_SHUTDOWN = 9;
     public static final int TAG_REGISTRY_SNAPSHOT = 10;
     public static final int TAG_EVENT = 11;
+    public static final int TAG_LOAD_CLASS = 12;
+    public static final int TAG_CLASS_LOADED = 13;
+    public static final int TAG_INVOKE_METHOD = 14;
+    public static final int TAG_INVOKE_RESULT = 15;
 
     /** Client or server, as the engine passes {@code --side} and Fabric's {@code EnvType}. */
     public static final int SIDE_CLIENT = 0;
@@ -45,7 +49,8 @@ public final class Wire implements Closeable {
 
     /** A message on the pipe. */
     public sealed interface Frame permits Hello, HelloAck, Ping, Pong, Discover, DiscoverResult,
-            Log, Fatal, Shutdown, RegistrySnapshot, Event {
+            Log, Fatal, Shutdown, RegistrySnapshot, Event, LoadClass, ClassLoaded,
+            InvokeMethod, InvokeResult {
     }
 
     public record Hello(int protocol, String host, String loader, String gameVersion, int side)
@@ -81,6 +86,18 @@ public final class Wire implements Closeable {
     }
 
     public record Event(String name, String payload) implements Frame {
+    }
+
+    public record LoadClass(String jarPath, String className) implements Frame {
+    }
+
+    public record ClassLoaded(String className) implements Frame {
+    }
+
+    public record InvokeMethod(String className, String methodName, String argsJson) implements Frame {
+    }
+
+    public record InvokeResult(String resultJson) implements Frame {
     }
 
     public static boolean isControl(Frame frame) {
@@ -159,6 +176,10 @@ public final class Wire implements Closeable {
             case Shutdown shutdown -> "shutdown(" + shutdown.code() + ")";
             case RegistrySnapshot snapshot -> "registry-snapshot(" + snapshot.json().length() + " chars)";
             case Event event -> "event(" + event.name() + ")";
+            case LoadClass loadClass -> "load-class(" + loadClass.className() + ")";
+            case ClassLoaded classLoaded -> "class-loaded(" + classLoaded.className() + ")";
+            case InvokeMethod invokeMethod -> "invoke-method(" + invokeMethod.methodName() + ")";
+            case InvokeResult invokeResult -> "invoke-result(" + invokeResult.resultJson().length() + " chars)";
         };
     }
 
@@ -219,6 +240,25 @@ public final class Wire implements Closeable {
                 out.string(event.name());
                 out.string(event.payload());
             }
+            case LoadClass loadClass -> {
+                out.u8(TAG_LOAD_CLASS);
+                out.string(loadClass.jarPath());
+                out.string(loadClass.className());
+            }
+            case ClassLoaded classLoaded -> {
+                out.u8(TAG_CLASS_LOADED);
+                out.string(classLoaded.className());
+            }
+            case InvokeMethod invokeMethod -> {
+                out.u8(TAG_INVOKE_METHOD);
+                out.string(invokeMethod.className());
+                out.string(invokeMethod.methodName());
+                out.string(invokeMethod.argsJson());
+            }
+            case InvokeResult invokeResult -> {
+                out.u8(TAG_INVOKE_RESULT);
+                out.string(invokeResult.resultJson());
+            }
         }
 
         return out.toByteArray();
@@ -244,6 +284,10 @@ public final class Wire implements Closeable {
             case TAG_SHUTDOWN -> new Shutdown(in.u32());
             case TAG_REGISTRY_SNAPSHOT -> new RegistrySnapshot(in.string());
             case TAG_EVENT -> new Event(in.string(), in.string());
+            case TAG_LOAD_CLASS -> new LoadClass(in.string(), in.string());
+            case TAG_CLASS_LOADED -> new ClassLoaded(in.string());
+            case TAG_INVOKE_METHOD -> new InvokeMethod(in.string(), in.string(), in.string());
+            case TAG_INVOKE_RESULT -> new InvokeResult(in.string());
             default -> throw new IOException("unknown frame tag " + tag);
         };
 

@@ -35,6 +35,26 @@ public final class EchoHost {
                                 + "\",\"side\":\"client\",\"javaVersion\":25,\"roots\":0,\"mods\":[],"
                                 + "\"order\":[],\"disabled\":[],\"errors\":[],\"warnings\":[],"
                                 + "\"elapsedMillis\":0}"));
+            } else if (frame instanceof Wire.LoadClass loadClass) {
+                try {
+                    ClassLoader loader = EchoHost.class.getClassLoader();
+                    Class<?> clazz = Class.forName(loadClass.className(), true, loader);
+                    wire.write(new Wire.ClassLoaded(clazz.getName()));
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                    wire.write(new Wire.Fatal(t.getClass().getName() + ": " + t.getMessage()));
+                }
+            } else if (frame instanceof Wire.InvokeMethod invokeMethod) {
+                try {
+                    Class<?> clazz = Class.forName(invokeMethod.className());
+                    java.lang.reflect.Method method = clazz.getMethod(invokeMethod.methodName());
+                    Object result = method.invoke(null);
+                    wire.write(new Wire.InvokeResult(
+                            result == null ? "null" : result.toString()));
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                    wire.write(new Wire.Fatal(t.getClass().getName() + ": " + t.getMessage()));
+                }
             } else if (frame instanceof Wire.Shutdown shutdown) {
                 System.exit(shutdown.code());
             } else {

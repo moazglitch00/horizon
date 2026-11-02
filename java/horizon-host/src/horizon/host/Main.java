@@ -95,6 +95,33 @@ public final class Main {
                             + snapshot.json().length() + " bytes");
                 } else if (frame instanceof Wire.Event event) {
                     System.err.println("horizon host: received event '" + event.name() + "'");
+                } else if (frame instanceof Wire.LoadClass loadClass) {
+                    try {
+                        System.err.println("horizon host: loading class " + loadClass.className());
+                        ClassLoader loader;
+                        if (loadClass.jarPath().isEmpty()) {
+                            loader = Main.class.getClassLoader();
+                        } else {
+                            java.net.URL[] urls = { new java.io.File(loadClass.jarPath()).toURI().toURL() };
+                            loader = new java.net.URLClassLoader(urls, ClassLoader.getSystemClassLoader());
+                        }
+                        Class<?> clazz = Class.forName(loadClass.className(), true, loader);
+                        System.err.println("horizon host: loaded " + clazz.getName());
+                        wire.write(new Wire.ClassLoaded(clazz.getName()));
+                    } catch (Throwable t) {
+                        t.printStackTrace();
+                        wire.write(new Wire.Fatal(t.getClass().getName() + ": " + t.getMessage()));
+                    }
+                } else if (frame instanceof Wire.InvokeMethod invokeMethod) {
+                    try {
+                        Class<?> clazz = Class.forName(invokeMethod.className());
+                        java.lang.reflect.Method method = clazz.getMethod(invokeMethod.methodName());
+                        Object result = method.invoke(null);
+                        wire.write(new Wire.InvokeResult(
+                                result == null ? "null" : result.toString()));
+                    } catch (Throwable t) {
+                        wire.write(new Wire.Fatal(t.getClass().getName() + ": " + t.getMessage()));
+                    }
                 } else {
                     wire.write(new Wire.Log(2, "host ignored " + Wire.describe(frame)));
                 }
