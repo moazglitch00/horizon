@@ -8,7 +8,9 @@ pub mod dual;
 pub mod index;
 pub mod manifest;
 pub mod modpack;
+pub mod validate;
 
 pub use content::Content;
 pub use dual::{DiscoveredMod, ModFormat, scan};
+pub use validate::{ValidationReport, validate};
 pub use manifest::{Capability, Manifest, Package, Side, find};
