@@ -103,6 +103,54 @@ pub const SOURCES: &[(&str, &str)] = &[
         "net/minecraft/world/level/ClientWorld.java",
         include_str!("../../../java/horizon-host/src/net/minecraft/world/level/ClientWorld.java"),
     ),
+    (
+        "net/minecraft/world/level/ServerWorld.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/ServerWorld.java"),
+    ),
+    (
+        "net/minecraft/world/level/ChunkPos.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/ChunkPos.java"),
+    ),
+    (
+        "net/minecraft/world/level/chunk/LevelChunk.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/chunk/LevelChunk.java"),
+    ),
+    (
+        "net/minecraft/world/level/block/entity/BlockEntity.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/block/entity/BlockEntity.java"),
+    ),
+    (
+        "net/minecraft/world/entity/EntityType.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/entity/EntityType.java"),
+    ),
+    (
+        "net/minecraft/world/level/block/entity/BlockEntityType.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/block/entity/BlockEntityType.java"),
+    ),
+    (
+        "net/minecraft/world/item/CreativeModeTab.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/item/CreativeModeTab.java"),
+    ),
+    (
+        "net/minecraft/world/item/enchantment/Enchantment.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/item/enchantment/Enchantment.java"),
+    ),
+    (
+        "net/minecraft/attributes/Attribute.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/attributes/Attribute.java"),
+    ),
+    (
+        "net/minecraft/client/gui/screens/Screen.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/client/gui/screens/Screen.java"),
+    ),
+    (
+        "net/minecraft/world/inventory/AbstractContainerMenu.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/inventory/AbstractContainerMenu.java"),
+    ),
+    (
+        "net/minecraft/world/Container.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/Container.java"),
+    ),
 ];
 
 /// How the host is started.
