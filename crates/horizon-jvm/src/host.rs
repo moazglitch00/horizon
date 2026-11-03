@@ -87,6 +87,10 @@ pub const SOURCES: &[(&str, &str)] = &[
         "net/minecraft/network/chat/Component.java",
         include_str!("../../../java/horizon-host/src/net/minecraft/network/chat/Component.java"),
     ),
+    (
+        "net/minecraft/client/MinecraftClient.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/client/MinecraftClient.java"),
+    ),
 ];
 
 /// How the host is started.
