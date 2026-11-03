@@ -55,6 +55,10 @@ pub const SOURCES: &[(&str, &str)] = &[
         "net/minecraft/util/Identifier.java",
         include_str!("../../../java/horizon-host/src/net/minecraft/util/Identifier.java"),
     ),
+    (
+        "net/minecraft/core/Registry.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/core/Registry.java"),
+    ),
 ];
 
 /// How the host is started.
