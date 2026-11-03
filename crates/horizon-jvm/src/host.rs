@@ -191,6 +191,10 @@ pub const SOURCES: &[(&str, &str)] = &[
         "net/minecraft/world/level/ServerWorld.java",
         include_str!("../../../java/horizon-host/src/net/minecraft/world/level/ServerWorld.java"),
     ),
+    (
+        "net/fabricmc/fabric/api/event/Event.java",
+        include_str!("../../../java/horizon-host/src/net/fabricmc/fabric/api/event/Event.java"),
+    ),
 ];
 
 /// How the host is started.
