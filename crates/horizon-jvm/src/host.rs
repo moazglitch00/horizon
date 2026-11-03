@@ -187,6 +187,10 @@ pub const SOURCES: &[(&str, &str)] = &[
         "net/minecraft/resources/ResourceLocation.java",
         include_str!("../../../java/horizon-host/src/net/minecraft/resources/ResourceLocation.java"),
     ),
+    (
+        "net/minecraft/world/level/ServerWorld.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/ServerWorld.java"),
+    ),
 ];
 
 /// How the host is started.
