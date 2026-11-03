@@ -215,6 +215,10 @@ pub const SOURCES: &[(&str, &str)] = &[
         "net/fabricmc/fabric/api/client/event/lifecycle/v1/ClientTickEvents.java",
         include_str!("../../../java/horizon-host/src/net/fabricmc/fabric/api/client/event/lifecycle/v1/ClientTickEvents.java"),
     ),
+    (
+        "net/fabricmc/fabric/api/client/keybinding/v1/KeyBinding.java",
+        include_str!("../../../java/horizon-host/src/net/fabricmc/fabric/api/client/keybinding/v1/KeyBinding.java"),
+    ),
 ];
 
 /// How the host is started.
