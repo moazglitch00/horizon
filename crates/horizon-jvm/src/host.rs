@@ -151,6 +151,42 @@ pub const SOURCES: &[(&str, &str)] = &[
         "net/minecraft/world/Container.java",
         include_str!("../../../java/horizon-host/src/net/minecraft/world/Container.java"),
     ),
+    (
+        "net/minecraft/world/damagesource/DamageSource.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/damagesource/DamageSource.java"),
+    ),
+    (
+        "net/minecraft/core/particles/ParticleType.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/core/particles/ParticleType.java"),
+    ),
+    (
+        "net/minecraft/sounds/SoundEvent.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/sounds/SoundEvent.java"),
+    ),
+    (
+        "net/minecraft/world/effect/MobEffect.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/effect/MobEffect.java"),
+    ),
+    (
+        "net/minecraft/world/item/crafting/Recipe.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/item/crafting/Recipe.java"),
+    ),
+    (
+        "net/minecraft/world/level/storage/loot/LootTable.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/storage/loot/LootTable.java"),
+    ),
+    (
+        "net/minecraft/network/syncher/EntityDataAccessor.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/network/syncher/EntityDataAccessor.java"),
+    ),
+    (
+        "net/minecraft/network/chat/Text.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/network/chat/Text.java"),
+    ),
+    (
+        "net/minecraft/resources/ResourceLocation.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/resources/ResourceLocation.java"),
+    ),
 ];
 
 /// How the host is started.
