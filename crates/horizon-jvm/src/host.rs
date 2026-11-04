@@ -1,4 +1,4 @@
-//! Starting, feeding and supervising the Horizon Java host.
+﻿//! Starting, feeding and supervising the Horizon Java host.
 //!
 //! The host is a child JVM (`java/horizon-host`), never a library inside this process. That is the
 //! safety property in [`ARCHITECTURE.md`](../../../docs/fabric-compatibility/ARCHITECTURE.md): a
@@ -188,10 +188,6 @@ pub const SOURCES: &[(&str, &str)] = &[
         include_str!("../../../java/horizon-host/src/net/minecraft/resources/ResourceLocation.java"),
     ),
     (
-        "net/minecraft/world/level/ServerWorld.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/ServerWorld.java"),
-    ),
-    (
         "net/fabricmc/fabric/api/event/Event.java",
         include_str!("../../../java/horizon-host/src/net/fabricmc/fabric/api/event/Event.java"),
     ),
@@ -236,88 +232,16 @@ pub const SOURCES: &[(&str, &str)] = &[
         include_str!("../../../java/horizon-host/src/net/minecraft/world/phys/Vec3.java"),
     ),
     (
-        "net/minecraft/world/level/block/entity/BlockEntity.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/block/entity/BlockEntity.java"),
-    ),
-    (
-        "net/minecraft/world/entity/EntityType.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/entity/EntityType.java"),
-    ),
-    (
-        "net/minecraft/world/level/block/entity/BlockEntityType.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/block/entity/BlockEntityType.java"),
-    ),
-    (
-        "net/minecraft/world/item/CreativeModeTab.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/item/CreativeModeTab.java"),
-    ),
-    (
-        "net/minecraft/world/item/enchantment/Enchantment.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/item/enchantment/Enchantment.java"),
-    ),
-    (
-        "net/minecraft/attributes/Attribute.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/attributes/Attribute.java"),
-    ),
-    (
-        "net/minecraft/client/gui/screens/Screen.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/client/gui/screens/Screen.java"),
-    ),
-    (
-        "net/minecraft/world/inventory/AbstractContainerMenu.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/inventory/AbstractContainerMenu.java"),
-    ),
-    (
-        "net/minecraft/world/Container.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/Container.java"),
-    ),
-    (
-        "net/minecraft/world/damagesource/DamageSource.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/damagesource/DamageSource.java"),
-    ),
-    (
-        "net/minecraft/core/particles/ParticleType.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/core/particles/ParticleType.java"),
-    ),
-    (
         "net/minecraft/core/particles/SimpleParticleType.java",
         include_str!("../../../java/horizon-host/src/net/minecraft/core/particles/SimpleParticleType.java"),
-    ),
-    (
-        "net/minecraft/sounds/SoundEvent.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/sounds/SoundEvent.java"),
-    ),
-    (
-        "net/minecraft/world/effect/MobEffect.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/effect/MobEffect.java"),
-    ),
-    (
-        "net/minecraft/world/item/crafting/Recipe.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/item/crafting/Recipe.java"),
     ),
     (
         "net/minecraft/world/item/crafting/RecipeManager.java",
         include_str!("../../../java/horizon-host/src/net/minecraft/world/item/crafting/RecipeManager.java"),
     ),
     (
-        "net/minecraft/world/level/storage/loot/LootTable.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/storage/loot/LootTable.java"),
-    ),
-    (
         "net/minecraft/world/level/storage/loot/LootContext.java",
         include_str!("../../../java/horizon-host/src/net/minecraft/world/level/storage/loot/LootContext.java"),
-    ),
-    (
-        "net/minecraft/network/syncher/EntityDataAccessor.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/network/syncher/EntityDataAccessor.java"),
-    ),
-    (
-        "net/minecraft/network/chat/Text.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/network/chat/Text.java"),
-    ),
-    (
-        "net/minecraft/resources/ResourceLocation.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/resources/ResourceLocation.java"),
     ),
     (
         "net/minecraft/commands/CommandSourceStack.java",
@@ -330,6 +254,22 @@ pub const SOURCES: &[(&str, &str)] = &[
     (
         "net/minecraft/network/FriendlyByteBuf.java",
         include_str!("../../../java/horizon-host/src/net/minecraft/network/FriendlyByteBuf.java"),
+    ),
+    (
+        "net/minecraft/world/entity/LivingEntity.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/entity/LivingEntity.java"),
+    ),
+    (
+        "net/minecraft/world/entity/Mob.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/entity/Mob.java"),
+    ),
+    (
+        "net/minecraft/world/entity/ai/goal/Goal.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/entity/ai/goal/Goal.java"),
+    ),
+    (
+        "net/minecraft/world/entity/ai/attributes/AttributeSupplier.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/entity/ai/attributes/AttributeSupplier.java"),
     ),
 ];
 
