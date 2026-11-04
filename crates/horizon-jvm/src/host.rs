@@ -1,4 +1,4 @@
-﻿//! Starting, feeding and supervising the Horizon Java host.
+//! Starting, feeding and supervising the Horizon Java host.
 //!
 //! The host is a child JVM (`java/horizon-host`), never a library inside this process. That is the
 //! safety property in [`ARCHITECTURE.md`](../../../docs/fabric-compatibility/ARCHITECTURE.md): a
@@ -81,7 +81,9 @@ pub const SOURCES: &[(&str, &str)] = &[
     ),
     (
         "net/minecraft/world/level/block/state/BlockState.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/block/state/BlockState.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/block/state/BlockState.java"
+        ),
     ),
     (
         "net/minecraft/network/chat/Component.java",
@@ -97,7 +99,9 @@ pub const SOURCES: &[(&str, &str)] = &[
     ),
     (
         "net/minecraft/world/entity/player/PlayerEntity.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/entity/player/PlayerEntity.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/entity/player/PlayerEntity.java"
+        ),
     ),
     (
         "net/minecraft/world/level/ClientWorld.java",
@@ -113,11 +117,15 @@ pub const SOURCES: &[(&str, &str)] = &[
     ),
     (
         "net/minecraft/world/level/chunk/LevelChunk.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/chunk/LevelChunk.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/chunk/LevelChunk.java"
+        ),
     ),
     (
         "net/minecraft/world/level/block/entity/BlockEntity.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/block/entity/BlockEntity.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/block/entity/BlockEntity.java"
+        ),
     ),
     (
         "net/minecraft/world/entity/EntityType.java",
@@ -125,15 +133,21 @@ pub const SOURCES: &[(&str, &str)] = &[
     ),
     (
         "net/minecraft/world/level/block/entity/BlockEntityType.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/block/entity/BlockEntityType.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/block/entity/BlockEntityType.java"
+        ),
     ),
     (
         "net/minecraft/world/item/CreativeModeTab.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/item/CreativeModeTab.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/item/CreativeModeTab.java"
+        ),
     ),
     (
         "net/minecraft/world/item/enchantment/Enchantment.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/item/enchantment/Enchantment.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/item/enchantment/Enchantment.java"
+        ),
     ),
     (
         "net/minecraft/attributes/Attribute.java",
@@ -145,7 +159,9 @@ pub const SOURCES: &[(&str, &str)] = &[
     ),
     (
         "net/minecraft/world/inventory/AbstractContainerMenu.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/inventory/AbstractContainerMenu.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/inventory/AbstractContainerMenu.java"
+        ),
     ),
     (
         "net/minecraft/world/Container.java",
@@ -153,11 +169,15 @@ pub const SOURCES: &[(&str, &str)] = &[
     ),
     (
         "net/minecraft/world/damagesource/DamageSource.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/damagesource/DamageSource.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/damagesource/DamageSource.java"
+        ),
     ),
     (
         "net/minecraft/core/particles/ParticleType.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/core/particles/ParticleType.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/core/particles/ParticleType.java"
+        ),
     ),
     (
         "net/minecraft/sounds/SoundEvent.java",
@@ -169,15 +189,21 @@ pub const SOURCES: &[(&str, &str)] = &[
     ),
     (
         "net/minecraft/world/item/crafting/Recipe.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/item/crafting/Recipe.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/item/crafting/Recipe.java"
+        ),
     ),
     (
         "net/minecraft/world/level/storage/loot/LootTable.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/storage/loot/LootTable.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/storage/loot/LootTable.java"
+        ),
     ),
     (
         "net/minecraft/network/syncher/EntityDataAccessor.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/network/syncher/EntityDataAccessor.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/network/syncher/EntityDataAccessor.java"
+        ),
     ),
     (
         "net/minecraft/network/chat/Text.java",
@@ -185,7 +211,9 @@ pub const SOURCES: &[(&str, &str)] = &[
     ),
     (
         "net/minecraft/resources/ResourceLocation.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/resources/ResourceLocation.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/resources/ResourceLocation.java"
+        ),
     ),
     (
         "net/fabricmc/fabric/api/event/Event.java",
@@ -193,35 +221,51 @@ pub const SOURCES: &[(&str, &str)] = &[
     ),
     (
         "net/fabricmc/fabric/api/event/lifecycle/v1/ServerLifecycleEvents.java",
-        include_str!("../../../java/horizon-host/src/net/fabricmc/fabric/api/event/lifecycle/v1/ServerLifecycleEvents.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/fabricmc/fabric/api/event/lifecycle/v1/ServerLifecycleEvents.java"
+        ),
     ),
     (
         "net/fabricmc/fabric/api/event/lifecycle/v1/ClientLifecycleEvents.java",
-        include_str!("../../../java/horizon-host/src/net/fabricmc/fabric/api/event/lifecycle/v1/ClientLifecycleEvents.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/fabricmc/fabric/api/event/lifecycle/v1/ClientLifecycleEvents.java"
+        ),
     ),
     (
         "net/fabricmc/fabric/api/item/v1/FabricItemSettings.java",
-        include_str!("../../../java/horizon-host/src/net/fabricmc/fabric/api/item/v1/FabricItemSettings.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/fabricmc/fabric/api/item/v1/FabricItemSettings.java"
+        ),
     ),
     (
         "net/fabricmc/fabric/api/object/builder/v1/block/FabricBlockSettings.java",
-        include_str!("../../../java/horizon-host/src/net/fabricmc/fabric/api/object/builder/v1/block/FabricBlockSettings.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/fabricmc/fabric/api/object/builder/v1/block/FabricBlockSettings.java"
+        ),
     ),
     (
         "net/fabricmc/fabric/api/client/event/lifecycle/v1/ClientTickEvents.java",
-        include_str!("../../../java/horizon-host/src/net/fabricmc/fabric/api/client/event/lifecycle/v1/ClientTickEvents.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/fabricmc/fabric/api/client/event/lifecycle/v1/ClientTickEvents.java"
+        ),
     ),
     (
         "net/fabricmc/fabric/api/client/keybinding/v1/KeyBinding.java",
-        include_str!("../../../java/horizon-host/src/net/fabricmc/fabric/api/client/keybinding/v1/KeyBinding.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/fabricmc/fabric/api/client/keybinding/v1/KeyBinding.java"
+        ),
     ),
     (
         "net/fabricmc/fabric/api/client/rendering/v1/RenderLayer.java",
-        include_str!("../../../java/horizon-host/src/net/fabricmc/fabric/api/client/rendering/v1/RenderLayer.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/fabricmc/fabric/api/client/rendering/v1/RenderLayer.java"
+        ),
     ),
     (
         "net/minecraft/world/level/chunk/ChunkAccess.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/chunk/ChunkAccess.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/chunk/ChunkAccess.java"
+        ),
     ),
     (
         "net/minecraft/core/BlockPos.java",
@@ -233,19 +277,27 @@ pub const SOURCES: &[(&str, &str)] = &[
     ),
     (
         "net/minecraft/core/particles/SimpleParticleType.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/core/particles/SimpleParticleType.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/core/particles/SimpleParticleType.java"
+        ),
     ),
     (
         "net/minecraft/world/item/crafting/RecipeManager.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/item/crafting/RecipeManager.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/item/crafting/RecipeManager.java"
+        ),
     ),
     (
         "net/minecraft/world/level/storage/loot/LootContext.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/storage/loot/LootContext.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/storage/loot/LootContext.java"
+        ),
     ),
     (
         "net/minecraft/commands/CommandSourceStack.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/commands/CommandSourceStack.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/commands/CommandSourceStack.java"
+        ),
     ),
     (
         "net/minecraft/network/protocol/Packet.java",
@@ -269,7 +321,31 @@ pub const SOURCES: &[(&str, &str)] = &[
     ),
     (
         "net/minecraft/world/entity/ai/attributes/AttributeSupplier.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/entity/ai/attributes/AttributeSupplier.java"),
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/entity/ai/attributes/AttributeSupplier.java"
+        ),
+    ),
+    (
+        "net/fabricmc/api/ModInitializer.java",
+        include_str!("../../../java/horizon-host/src/net/fabricmc/api/ModInitializer.java"),
+    ),
+    (
+        "net/fabricmc/api/ClientModInitializer.java",
+        include_str!("../../../java/horizon-host/src/net/fabricmc/api/ClientModInitializer.java"),
+    ),
+    (
+        "net/fabricmc/api/DedicatedServerModInitializer.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/fabricmc/api/DedicatedServerModInitializer.java"
+        ),
+    ),
+    (
+        "horizon/host/Entrypoints.java",
+        include_str!("../../../java/horizon-host/src/horizon/host/Entrypoints.java"),
+    ),
+    (
+        "horizon/host/HorizonGameProvider.java",
+        include_str!("../../../java/horizon-host/src/horizon/host/HorizonGameProvider.java"),
     ),
 ];
 
@@ -570,11 +646,49 @@ impl JavaHost {
     }
 
     /// Invokes a static no-arg method. Phase 1 of fabric-runtime.
-    pub fn invoke_method(&mut self, class_name: &str, method_name: &str) -> Result<String, HostError> {
+    pub fn invoke_method(
+        &mut self,
+        class_name: &str,
+        method_name: &str,
+    ) -> Result<String, HostError> {
         self.send(&Frame::InvokeMethod {
             class_name: class_name.to_string(),
             method_name: method_name.to_string(),
             args_json: "[]".to_string(),
+        })?;
+        loop {
+            let frame = self.next_frame(self.config.frame_timeout, "invoke-result")?;
+            match frame {
+                Frame::InvokeResult { result_json } => return Ok(result_json),
+                Frame::Fatal { message } => return Err(HostError::Fatal(message)),
+                Frame::Log { .. } => continue,
+                other => {
+                    return Err(HostError::Unexpected {
+                        expected: "invoke-result",
+                        got: other.name().to_string(),
+                    });
+                }
+            }
+        }
+    }
+
+    /// Instantiates a mod's entrypoint class and calls it. Phase 2 of fabric-runtime.
+    ///
+    /// `entrypoint` is `main`, `client` or `server`; `jar_path` may be empty when the
+    /// class is on the host's own classpath. Returns the host's result string:
+    /// `ok:<entrypoint>:<class>[:<id>]` or `error:<throwable>:<message>`.
+    pub fn invoke_entrypoint(
+        &mut self,
+        jar_path: &str,
+        class_name: &str,
+        entrypoint: &str,
+        mod_id: &str,
+    ) -> Result<String, HostError> {
+        self.send(&Frame::Entrypoint {
+            jar_path: jar_path.to_string(),
+            class_name: class_name.to_string(),
+            entrypoint: entrypoint.to_string(),
+            mod_id: mod_id.to_string(),
         })?;
         loop {
             let frame = self.next_frame(self.config.frame_timeout, "invoke-result")?;

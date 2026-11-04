@@ -43,7 +43,10 @@ fn main() {
     let registry = match BlockRegistry::from_facts_json(BufReader::new(file)) {
         Ok(r) => r,
         Err(e) => {
-            eprintln!("{} is not a valid block registry: {e}", facts_path.display());
+            eprintln!(
+                "{} is not a valid block registry: {e}",
+                facts_path.display()
+            );
             std::process::exit(1);
         }
     };

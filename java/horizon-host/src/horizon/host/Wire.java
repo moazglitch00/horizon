@@ -42,6 +42,7 @@ public final class Wire implements Closeable {
     public static final int TAG_CLASS_LOADED = 13;
     public static final int TAG_INVOKE_METHOD = 14;
     public static final int TAG_INVOKE_RESULT = 15;
+    public static final int TAG_ENTRYPOINT = 16;
 
     /** Client or server, as the engine passes {@code --side} and Fabric's {@code EnvType}. */
     public static final int SIDE_CLIENT = 0;
@@ -50,7 +51,7 @@ public final class Wire implements Closeable {
     /** A message on the pipe. */
     public sealed interface Frame permits Hello, HelloAck, Ping, Pong, Discover, DiscoverResult,
             Log, Fatal, Shutdown, RegistrySnapshot, Event, LoadClass, ClassLoaded,
-            InvokeMethod, InvokeResult {
+            InvokeMethod, InvokeResult, Entrypoint {
     }
 
     public record Hello(int protocol, String host, String loader, String gameVersion, int side)
@@ -98,6 +99,18 @@ public final class Wire implements Closeable {
     }
 
     public record InvokeResult(String resultJson) implements Frame {
+    }
+
+    /**
+     * Engine to host: run a mod's Fabric entrypoint.
+     *
+     * @param jarPath    mod jar, or empty when the class is on the host classpath
+     * @param className  entrypoint class
+     * @param entrypoint {@code main}, {@code client} or {@code server}
+     * @param modId      the mod id, for logs and diagnostics
+     */
+    public record Entrypoint(String jarPath, String className, String entrypoint, String modId)
+            implements Frame {
     }
 
     public static boolean isControl(Frame frame) {
@@ -180,6 +193,8 @@ public final class Wire implements Closeable {
             case ClassLoaded classLoaded -> "class-loaded(" + classLoaded.className() + ")";
             case InvokeMethod invokeMethod -> "invoke-method(" + invokeMethod.methodName() + ")";
             case InvokeResult invokeResult -> "invoke-result(" + invokeResult.resultJson().length() + " chars)";
+            case Entrypoint entrypoint -> "entrypoint(" + entrypoint.entrypoint() + " "
+                    + entrypoint.className() + ")";
         };
     }
 
@@ -259,6 +274,13 @@ public final class Wire implements Closeable {
                 out.u8(TAG_INVOKE_RESULT);
                 out.string(invokeResult.resultJson());
             }
+            case Entrypoint entrypoint -> {
+                out.u8(TAG_ENTRYPOINT);
+                out.string(entrypoint.jarPath());
+                out.string(entrypoint.className());
+                out.string(entrypoint.entrypoint());
+                out.string(entrypoint.modId());
+            }
         }
 
         return out.toByteArray();
@@ -288,6 +310,7 @@ public final class Wire implements Closeable {
             case TAG_CLASS_LOADED -> new ClassLoaded(in.string());
             case TAG_INVOKE_METHOD -> new InvokeMethod(in.string(), in.string(), in.string());
             case TAG_INVOKE_RESULT -> new InvokeResult(in.string());
+            case TAG_ENTRYPOINT -> new Entrypoint(in.string(), in.string(), in.string(), in.string());
             default -> throw new IOException("unknown frame tag " + tag);
         };
 

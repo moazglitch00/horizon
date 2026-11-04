@@ -3,7 +3,8 @@ use std::process::Command;
 
 #[test]
 fn registry_dump_binary_parses_facts_json() {
-    let dir = std::env::temp_dir().join(format!("horizon-registry-dump-test-{}", std::process::id()));
+    let dir =
+        std::env::temp_dir().join(format!("horizon-registry-dump-test-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
 
@@ -42,7 +43,11 @@ fn registry_dump_binary_parses_facts_json() {
         .output()
         .expect("run binary");
 
-    assert!(output.status.success(), "binary failed: {}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "binary failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let json: serde_json::Value = serde_json::from_str(&stdout).expect("parse json");

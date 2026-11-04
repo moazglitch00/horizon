@@ -122,6 +122,15 @@ public final class Main {
                     } catch (Throwable t) {
                         wire.write(new Wire.Fatal(t.getClass().getName() + ": " + t.getMessage()));
                     }
+                } else if (frame instanceof Wire.Entrypoint entrypoint) {
+                    String result = Entrypoints.invoke(
+                            entrypoint.jarPath(),
+                            entrypoint.className(),
+                            entrypoint.entrypoint(),
+                            entrypoint.modId());
+                    System.err.println("horizon host: entrypoint " + entrypoint.entrypoint()
+                            + " " + entrypoint.className() + " -> " + result);
+                    wire.write(new Wire.InvokeResult(result));
                 } else {
                     wire.write(new Wire.Log(2, "host ignored " + Wire.describe(frame)));
                 }

@@ -49,6 +49,7 @@ pub const TAG_LOAD_CLASS: u8 = 12;
 pub const TAG_CLASS_LOADED: u8 = 13;
 pub const TAG_INVOKE_METHOD: u8 = 14;
 pub const TAG_INVOKE_RESULT: u8 = 15;
+pub const TAG_ENTRYPOINT: u8 = 16;
 
 /// Client or server, the same choice `--side` makes and Fabric's `EnvType` models.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -165,6 +166,14 @@ pub enum Frame {
     InvokeResult {
         result_json: String,
     },
+    /// Engine → host: instantiate a mod class and call its Fabric entrypoint.
+    /// Phase 2 of fabric-runtime: the first mod code that actually runs.
+    Entrypoint {
+        jar_path: String,
+        class_name: String,
+        entrypoint: String,
+        mod_id: String,
+    },
 }
 
 impl Frame {
@@ -185,6 +194,7 @@ impl Frame {
             Self::ClassLoaded { .. } => TAG_CLASS_LOADED,
             Self::InvokeMethod { .. } => TAG_INVOKE_METHOD,
             Self::InvokeResult { .. } => TAG_INVOKE_RESULT,
+            Self::Entrypoint { .. } => TAG_ENTRYPOINT,
         }
     }
 
@@ -205,6 +215,7 @@ impl Frame {
             Self::ClassLoaded { .. } => "class-loaded",
             Self::InvokeMethod { .. } => "invoke-method",
             Self::InvokeResult { .. } => "invoke-result",
+            Self::Entrypoint { .. } => "entrypoint",
         }
     }
 
@@ -263,7 +274,10 @@ impl Frame {
                 out.string(name)?;
                 out.string(payload)?;
             }
-            Self::LoadClass { jar_path, class_name } => {
+            Self::LoadClass {
+                jar_path,
+                class_name,
+            } => {
                 out.string(jar_path)?;
                 out.string(class_name)?;
             }
@@ -278,6 +292,17 @@ impl Frame {
                 out.string(args_json)?;
             }
             Self::InvokeResult { result_json } => out.string(result_json)?,
+            Self::Entrypoint {
+                jar_path,
+                class_name,
+                entrypoint,
+                mod_id,
+            } => {
+                out.string(jar_path)?;
+                out.string(class_name)?;
+                out.string(entrypoint)?;
+                out.string(mod_id)?;
+            }
         }
 
         Ok(out.bytes)
@@ -363,6 +388,12 @@ impl Frame {
             },
             TAG_INVOKE_RESULT => Self::InvokeResult {
                 result_json: input.string()?,
+            },
+            TAG_ENTRYPOINT => Self::Entrypoint {
+                jar_path: input.string()?,
+                class_name: input.string()?,
+                entrypoint: input.string()?,
+                mod_id: input.string()?,
             },
             other => return Err(ProtocolError::UnknownTag(other)),
         };

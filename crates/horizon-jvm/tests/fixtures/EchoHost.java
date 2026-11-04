@@ -55,6 +55,13 @@ public final class EchoHost {
                     t.printStackTrace();
                     wire.write(new Wire.Fatal(t.getClass().getName() + ": " + t.getMessage()));
                 }
+            } else if (frame instanceof Wire.Entrypoint entrypoint) {
+                String result = horizon.host.Entrypoints.invoke(
+                        entrypoint.jarPath(),
+                        entrypoint.className(),
+                        entrypoint.entrypoint(),
+                        entrypoint.modId());
+                wire.write(new Wire.InvokeResult(result));
             } else if (frame instanceof Wire.Shutdown shutdown) {
                 System.exit(shutdown.code());
             } else {
