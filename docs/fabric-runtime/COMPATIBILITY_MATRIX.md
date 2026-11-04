@@ -64,14 +64,26 @@ the host and have a smoke check, but no mod has loaded them. The T-202 audit
 measured depth: **25 REAL, 18 PARTIAL, 4 SHELL, 3 blocker-level fakes**.
 Signatures are audited against the real jar (T-201).
 
-**Naming blocker:** real Fabric mods use **intermediary** names
-(`net.minecraft.class_310`), not the official names below. Until T-230 remaps
-mod bytecode (or we ship intermediary shims), no real mod links against these.
+**Naming:** since 26.1 the game ships unobfuscated (`26.1.2.jar` has zero
+`class_*` entries), so 26.x mods reference these official names directly.
+Intermediary remapping only applies to ≤1.21 mods (T-230, deferred). The
+remaining naming problem is ours: 8 shims use names that do not exist in a
+26.x jar (T-240).
 
-SHELL / blocker classes (T-214 queue): `MinecraftServer` (tick no-op,
-`isRunning()` hardcoded true), `Level`, `RecipeManager` (always-empty lookups),
-`AbstractContainerMenu` (`clicked` no-op), plus `Block.setId` discarding its
-argument and `FriendlyByteBuf.readUtf(maxLength)` ignoring the cap.
+SHELL / blocker classes (T-214 queue): all 3 blockers and the 2 majors are now
+either real or throw a named `UnsupportedOperationException`; verified by
+`shim_behaviour_is_not_silent`.
+
+**Name conformance (measured against `26.1.2.jar`):** 39 of the 47 shim paths
+exist in a real 26.x jar. The 8 that do not use Yarn/older names and must be
+renamed (T-240): `client.MinecraftClient`→`client.Minecraft`,
+`util.Identifier`+`resources.ResourceLocation`→`resources.Identifier`,
+`world.entity.player.PlayerEntity`→`...Player`,
+`world.level.ClientWorld`→`client.multiplayer.ClientLevel`,
+`world.level.ServerWorld`→`server.level.ServerLevel`,
+`attributes.Attribute`→`world.entity.ai.attributes.Attribute`, and
+`network.chat.Text`, which has no counterpart. Signature conformance for the 39
+is not audited yet (T-241).
 
 | Package | Classes |
 |---|---|

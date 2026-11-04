@@ -21,15 +21,17 @@ command output in `INTEGRATION_LOG.md`.
 | T-211 | Fix T-201 MISMATCHes: `Event` as abstract class with real `invoker`; lifecycle events as final classes with static fields; drop dead `create()`/`SimpleEvent` | fabric-specialist | `net/fabricmc/fabric/api/**` | `javap` re-audit shows MATCH for the 4 present types |
 | T-212 | `Event.invoker()` dispatches listeners in registration order | fabric-specialist | `event/Event.java` | test: two listeners fire order 1,2 |
 | T-213 | Java `RegistryStore` for `registry-snapshot` | registry-specialist | `horizon/host/RegistryStore.java` (new) + `host.rs` registration by PM | round-trip: id sent == id resolved |
-| T-214 | De-fake the 3 blockers + 2 majors from T-202 | java-specialist | `MinecraftServer`, `RecipeManager`, `AbstractContainerMenu`, `Block`, `FriendlyByteBuf` | no silent no-op remains; each either real or `UnsupportedOperationException("<phase>")` |
+| T-214 | De-fake the 3 blockers + 2 majors from T-202 | java-specialist | `MinecraftServer`, `RecipeManager`, `AbstractContainerMenu`, `Block`, `FriendlyByteBuf` (+`BlockEntityType`) | **done** — `shim_behaviour_is_not_silent` passes |
 | T-216 | Replace the 4 ABSENT Fabric API types (keybinding, render layer, item/block settings) with real counterparts or delete them | fabric-specialist | those 4 files | audit shows the shim either matches or is gone |
 
-## Wave 3 — architecture decision (unblocked, high priority)
+## Wave 3 — namespace and real linking (highest priority)
 
 | ID | Task | Owner | Why |
 |---|---|---|---|
-| T-230 | Decide and prototype the intermediary→official remap | project-manager + research-specialist | Real mods reference `class_XXX`; without remapping no real mod links. Prototype: remap a fixture class's reference and load it against an official-named shim. |
-| T-231 | If remapping is chosen, wire it into `Entrypoints.loaderFor` before `Class.forName` | java-specialist | first real-mod link path |
+| T-240 | Rename the 8 shims that do not exist in a 26.x jar to their real paths (`MinecraftClient`→`Minecraft`, `util.Identifier`+`ResourceLocation`→`resources.Identifier`, `PlayerEntity`→`Player`, `ClientWorld`→`client.multiplayer.ClientLevel`, `ServerWorld`→`server.level.ServerLevel`, `attributes.Attribute`→`world.entity.ai.attributes.Attribute`, delete `network.chat.Text`) and update every reference + `SOURCES` | java-specialist + PM | 39/47 shims already match `26.1.2.jar`; these 8 cannot link at all |
+| T-241 | Signature audit of the 39 correctly-named shims against `26.1.2.jar` (`javap -p`), list every missing/incorrect member | research-specialist | names alone do not link; descriptors must match |
+| T-242 | Seed the `Event` + lifecycle classes from T-211 with real `invoker()` dispatch | fabric-specialist | first Fabric API behaviour |
+| T-230 | Legacy: remap ≤1.21 intermediary mods | deferred | 26.x mods use named classes; no 26.3 mappings on disk |
 
 ## Wave 4 — needs the 26.3 runtime (blocked, not skipped)
 

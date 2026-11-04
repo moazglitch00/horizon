@@ -14,7 +14,12 @@ public class BlockEntityType<T extends BlockEntity> {
     }
 
     public T create() {
-        return factory != null ? factory.get() : null;
+        if (factory == null) {
+            throw new UnsupportedOperationException(
+                    "block-entity-type.factory: this BlockEntityType has no factory, so no "
+                            + "BlockEntity can be created (fabric-runtime Phase 6)");
+        }
+        return factory.get();
     }
 
     public Supplier<T> getFactory() {

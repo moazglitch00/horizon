@@ -19,7 +19,9 @@ public class FriendlyByteBuf {
     }
 
     public FriendlyByteBuf(int capacity) {
-        this(new byte[Math.max(16, capacity)]);
+        this.data = new byte[Math.max(16, capacity)];
+        this.readerIndex = 0;
+        this.writerIndex = 0;
     }
 
     public FriendlyByteBuf(byte[] data) {
@@ -168,7 +170,15 @@ public class FriendlyByteBuf {
     }
 
     public String readUtf(int maxLength) {
-        return readUtf();
+        if (maxLength < 0) {
+            throw new IllegalArgumentException("maxLength must be >= 0, was " + maxLength);
+        }
+        String value = readUtf();
+        if (value.length() > maxLength) {
+            throw new IllegalArgumentException(
+                    "readUtf: string is " + value.length() + " chars, max is " + maxLength);
+        }
+        return value;
     }
 
     public String readUtf() {

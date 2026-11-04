@@ -51,14 +51,14 @@ edited only by the project-manager.
 | T-203 `ModInitializer` fixture | java | deepseek | `tests/fixtures/TestModInitializer.java` | **done** |
 | T-210 entrypoint invocation | java + PM | deepseek | `host.rs`, `Main.java`, `tests/host.rs` | **done** — test passes |
 | T-215 `SOURCES` coverage guard | PM | big-pickle | `host.rs`, `tests/host.rs` | **done** — guards the regression |
+| T-214 de-fake blockers | java | (direct) | 6 `net.minecraft` files + `ShimBehaviourTest.java` | **done** — `shim_behaviour_is_not_silent` passes |
+| T-230 remap feasibility | research | nemotron | none (read-only) | **done** — conclusion superseded: 26.x ships named classes, remap is legacy-only |
 
 ## Next wave assignment
 
 | Task | Agent | Model | Files owned |
 |---|---|---|---|
-| T-211/T-212 Fabric `Event` + lifecycle signatures and dispatch | fabric-specialist | mimo-v2.6-flash-free | `net/fabricmc/fabric/api/event/**` |
-| T-214 de-fake blockers | java-specialist | deepseek-v4.1-flash-free | 5 named `net.minecraft` files |
-| T-230 remap prototype | research-specialist | nemotron-3.5-super-vl-free | none (read-only; writes a report) |
+| T-240 rename 8 shims to real 26.x paths | java-specialist + PM | deepseek-v4.1-flash-free | the 8 named files + every referencing shim + `SOURCES` |
 
 ## Retry policy
 

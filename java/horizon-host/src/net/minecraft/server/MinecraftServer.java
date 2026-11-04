@@ -6,6 +6,7 @@ package net.minecraft.server;
  */
 public class MinecraftServer {
     private static MinecraftServer instance;
+    private volatile boolean running;
 
     private MinecraftServer() {
     }
@@ -21,12 +22,23 @@ public class MinecraftServer {
         return "26.3";
     }
 
+    /**
+     * Whether the engine has started this server. The shim is not a running
+     * server, so this is false until the Rust side reports a start.
+     */
     public boolean isRunning() {
-        return true;
+        return running;
+    }
+
+    /** Called by the bridge when the Rust engine starts/stops the server. */
+    public void setRunning(boolean running) {
+        this.running = running;
     }
 
     public void tick() {
-        // Override in real implementation
+        throw new UnsupportedOperationException(
+                "server-tick: MinecraftServer.tick is owned by the Rust engine and is not "
+                        + "bridged to the JVM host yet (fabric-runtime Phase 6)");
     }
 
     @Override

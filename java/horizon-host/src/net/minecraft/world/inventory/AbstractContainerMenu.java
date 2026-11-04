@@ -105,7 +105,10 @@ public class AbstractContainerMenu {
     }
 
     public void clicked(int slotId, int button, Object clickType, Object player) {
-        // Override in subclasses
+        throw new UnsupportedOperationException(
+                "container-click: slot clicks are owned by the Rust engine and are not bridged "
+                        + "to the JVM host yet (fabric-runtime Phase 6); override clicked() in a "
+                        + "custom menu if it does not need engine state");
     }
 
     public void clicked(int slotId, int button, int clickType, Object player) {

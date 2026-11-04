@@ -522,3 +522,81 @@ fn host_sources_compile_into_a_class_directory() {
             .is_file()
     );
 }
+
+/// The de-faked shims must behave, not just compile (T-214).
+///
+/// Compiles every `net/minecraft/**` source together with `ShimBehaviourTest`,
+/// runs it on a plain JVM and requires `SHIM-OK`. Each assertion in the fixture
+/// fails on the pre-T-214 code: `setId` discarded its argument,
+/// `readUtf(maxLength)` ignored the cap, `isRunning()` was hardcoded true,
+/// `tick()` was a silent no-op, and `RecipeManager`/`AbstractContainerMenu`
+/// returned empty values or did nothing instead of doing the work or failing
+/// loudly.
+#[test]
+fn shim_behaviour_is_not_silent() {
+    fn collect(dir: &std::path::Path, out: &mut Vec<PathBuf>) {
+        for entry in std::fs::read_dir(dir).expect("read shim dir") {
+            let path = entry.expect("dir entry").path();
+            if path.is_dir() {
+                collect(&path, out);
+            } else if path.extension().is_some_and(|ext| ext == "java") {
+                out.push(path);
+            }
+        }
+    }
+
+    let jdk = jdk();
+    let shims = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("java")
+        .join("horizon-host")
+        .join("src")
+        .join("net");
+    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("fixtures")
+        .join("ShimBehaviourTest.java");
+
+    let classes = temp_game_dir("shim-behaviour");
+    let mut sources = Vec::new();
+    collect(&shims, &mut sources);
+    assert!(
+        sources.len() >= 58,
+        "expected the full net/minecraft shim tree, found {} sources",
+        sources.len()
+    );
+
+    let mut javac = Command::new(&jdk.javac);
+    javac
+        .arg("--release")
+        .arg("21")
+        .arg("-encoding")
+        .arg("UTF-8")
+        .arg("-proc:none")
+        .arg("-d")
+        .arg(&classes);
+    for source in &sources {
+        javac.arg(source);
+    }
+    javac.arg(&fixture);
+    let output = javac.output().expect("javac (shims + fixture)");
+    assert!(
+        output.status.success(),
+        "javac failed:\n{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let output = Command::new(&jdk.java)
+        .arg("-cp")
+        .arg(&classes)
+        .arg("ShimBehaviourTest")
+        .output()
+        .expect("java (ShimBehaviourTest)");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        output.status.success() && stdout.contains("SHIM-OK"),
+        "fixture failed\nstdout:\n{stdout}\nstderr:\n{stderr}"
+    );
+}

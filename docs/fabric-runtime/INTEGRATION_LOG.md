@@ -5,6 +5,65 @@ what proved it, and what it did **not** prove.
 
 ---
 
+## 2026-11-04 — T-214: the audited silent fakes are gone
+
+### Change
+- `Block.setId` now stores its argument (`id` is no longer `final`), so
+  `getId()` can return the registry id.
+- `FriendlyByteBuf.readUtf(maxLength)` now enforces the cap (and rejects a
+  negative cap).
+- `FriendlyByteBuf(int capacity)` no longer marks unwritten capacity as
+  readable — `new FriendlyByteBuf(256).readableBytes()` was 256, so every
+  write/read round-trip read 256 garbage bytes first. Found by the new fixture.
+- `MinecraftServer`: `isRunning()` reads a real field (false until
+  `setRunning(true)`), and `tick()` throws
+  `UnsupportedOperationException("server-tick: …")` instead of silently doing
+  nothing.
+- `RecipeManager`: real `LinkedHashMap` store (`addRecipe`), `getRecipeFor`
+  scans and calls `Recipe.matches`, `byType(null)` returns the store, and
+  `byType(type)` throws a named error until a type registry exists.
+- `AbstractContainerMenu.clicked(...)` throws a named `container-click` error
+  instead of silently ignoring clicks.
+- `BlockEntityType.create()` throws a named `block-entity-type.factory` error
+  instead of returning `null`.
+
+### Proof
+`crates/horizon-jvm/tests/fixtures/ShimBehaviourTest.java` asserts every
+behaviour above, and `shim_behaviour_is_not_silent` compiles all 58
+`net/minecraft` sources with it, runs it on a plain JVM and requires `SHIM-OK`.
+
+```
+cargo test -p horizon-jvm
+test result: ok. 6 passed  (unit)
+test result: ok. 9 passed  (tests/host.rs, incl. shim_behaviour_is_not_silent)
+test result: ok. 10 passed (protocol)
+test result: ok. 1 passed  (registry dump)
+cargo clippy -p horizon-jvm --all-targets -- -D warnings   # clean
+```
+
+Did **not** prove: that the shims match real 26.x signatures (next finding), or
+that any real mod links.
+
+## 2026-11-04 — T-230 corrected: 26.x ships named classes
+
+T-201 measured a **1.21.5** jar and concluded real mods use intermediary names.
+That is true for 1.21.x jars, but **not for 26.x**: `26.1.2.jar` has
+`net/minecraft/world/level/block/Block.class` and **zero**
+`net/minecraft/class_*.class` entries, so mods built for 26.x reference
+official names. The repo's `docs/fabric-compatibility/ARCHITECTURE.md` already
+said this ("since 26.1 the game ships unobfuscated").
+
+No 26.3 mappings or Loader 0.19.5 exist on disk, so building a remapper first
+would be speculative; it stays as legacy ≤1.21 support.
+
+What we measured instead: 39 of 47 shims exist at the same path in
+`26.1.2.jar`; 8 use Yarn/older names (`MinecraftClient`, `util.Identifier`,
+`PlayerEntity`, `ClientWorld`, `ServerWorld`, `ResourceLocation`,
+`attributes.Attribute`, `network.chat.Text`). That is T-240, and it is the real
+next blocker.
+
+---
+
 ## 2026-11-04 — T-202 shim audit + SOURCES regression fixed
 
 ### Regression fixed

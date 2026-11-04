@@ -7,7 +7,7 @@ import net.minecraft.util.Identifier;
  * Phase 2 of fabric-runtime: Minecraft Java compatibility layer.
  */
 public class Block {
-    private final Identifier id;
+    private Identifier id;
     private final Properties properties;
 
     public Block(Properties properties) {
@@ -20,7 +20,7 @@ public class Block {
     }
 
     public void setId(Identifier id) {
-        // Allow setting after construction for registry binding
+        this.id = id;
     }
 
     public Properties getProperties() {
