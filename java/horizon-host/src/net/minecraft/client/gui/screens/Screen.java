@@ -1,31 +1,31 @@
 package net.minecraft.client.gui.screens;
 
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 /**
  * Minimal compatibility shim for Minecraft's Screen.
  * Phase 2 of fabric-runtime: Minecraft Java compatibility layer.
  */
 public class Screen {
-    protected final MinecraftClient minecraft;
+    protected final Minecraft minecraft;
     public int width;
     public int height;
     protected boolean isPauseScreen = false;
     private net.minecraft.network.chat.Component title;
 
     public Screen() {
-        this(MinecraftClient.getInstance(), null);
+        this(Minecraft.getInstance(), null);
     }
 
     public Screen(net.minecraft.network.chat.Component title) {
-        this(MinecraftClient.getInstance(), title);
+        this(Minecraft.getInstance(), title);
     }
 
-    public Screen(MinecraftClient minecraft) {
+    public Screen(Minecraft minecraft) {
         this(minecraft, null);
     }
 
-    public Screen(MinecraftClient minecraft, net.minecraft.network.chat.Component title) {
+    public Screen(Minecraft minecraft, net.minecraft.network.chat.Component title) {
         this.minecraft = minecraft;
         this.title = title;
     }
@@ -34,7 +34,7 @@ public class Screen {
         return title;
     }
 
-    public MinecraftClient getMinecraft() {
+    public Minecraft getMinecraft() {
         return minecraft;
     }
 

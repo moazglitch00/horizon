@@ -1,6 +1,6 @@
 package net.minecraft.world.item.enchantment;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 
 /**
  * Minimal compatibility shim for Minecraft's Enchantment.

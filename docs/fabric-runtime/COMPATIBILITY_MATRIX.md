@@ -57,33 +57,30 @@ exercised by a mod, so its fidelity is unproven.
 | fabric-screen-api-v1 | PLANNED | |
 | fabric-biome-api-v1 | PLANNED | |
 
-## Minecraft Java API — 47 shims
+## Minecraft Java API — 45 shims
 
 All rows are **SHIM** unless noted: they compile with `javac --release 21` into
 the host and have a smoke check, but no mod has loaded them. The T-202 audit
 measured depth: **25 REAL, 18 PARTIAL, 4 SHELL, 3 blocker-level fakes**.
-Signatures are audited against the real jar (T-201).
+T-214 removed the silent fakes.
 
 **Naming:** since 26.1 the game ships unobfuscated (`26.1.2.jar` has zero
 `class_*` entries), so 26.x mods reference these official names directly.
-Intermediary remapping only applies to ≤1.21 mods (T-230, deferred). The
-remaining naming problem is ours: 8 shims use names that do not exist in a
-26.x jar (T-240).
+Intermediary remapping only applies to ≤1.21 mods (T-230, deferred).
 
-SHELL / blocker classes (T-214 queue): all 3 blockers and the 2 majors are now
-either real or throw a named `UnsupportedOperationException`; verified by
-`shim_behaviour_is_not_silent`.
-
-**Name conformance (measured against `26.1.2.jar`):** 39 of the 47 shim paths
-exist in a real 26.x jar. The 8 that do not use Yarn/older names and must be
-renamed (T-240): `client.MinecraftClient`→`client.Minecraft`,
+**Path conformance (measured against `26.1.2.jar`):** **45/45**. T-240 renamed
+the 8 Yarn/older paths (`client.MinecraftClient`→`client.Minecraft`,
 `util.Identifier`+`resources.ResourceLocation`→`resources.Identifier`,
 `world.entity.player.PlayerEntity`→`...Player`,
 `world.level.ClientWorld`→`client.multiplayer.ClientLevel`,
 `world.level.ServerWorld`→`server.level.ServerLevel`,
-`attributes.Attribute`→`world.entity.ai.attributes.Attribute`, and
-`network.chat.Text`, which has no counterpart. Signature conformance for the 39
-is not audited yet (T-241).
+`attributes.Attribute`→`world.entity.ai.attributes.Attribute`; `network.chat.Text`
+was deleted). `shim_paths_match_the_verified_26x_set` guards the set.
+
+**Member conformance (measured with `tools/fabric_shim_coverage.py`):**
+**3.6%** of public/protected methods (120/3338) and **1.5%** of fields (9/589).
+This, not the path count, is the linking gap: mods call members, and a missing
+one is `NoSuchMethodError`.
 
 | Package | Classes |
 |---|---|

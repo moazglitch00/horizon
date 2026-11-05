@@ -58,7 +58,8 @@ edited only by the project-manager.
 
 | Task | Agent | Model | Files owned |
 |---|---|---|---|
-| T-240 rename 8 shims to real 26.x paths | java-specialist + PM | deepseek-v4.1-flash-free | the 8 named files + every referencing shim + `SOURCES` |
+| T-240 rename 8 shims to real 26.x paths | java-specialist + PM | deepseek-v4.1-flash-free | **done** — 45/45 paths verified in `26.1.2.jar`; `shim_paths_match_the_verified_26x_set` |
+| T-241 grow public/protected member conformance | java-specialist + PM | deepseek-v4.1-flash-free | measured by `tools/fabric_shim_coverage.py`; 3.6% methods / 1.5% fields at start |
 
 ## Retry policy
 

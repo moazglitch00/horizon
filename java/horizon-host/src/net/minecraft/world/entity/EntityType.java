@@ -1,6 +1,6 @@
 package net.minecraft.world.entity;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 
 import java.util.function.Supplier;
 

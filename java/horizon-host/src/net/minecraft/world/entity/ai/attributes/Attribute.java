@@ -1,6 +1,6 @@
-package net.minecraft.attributes;
+package net.minecraft.world.entity.ai.attributes;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 
 /**
  * Minimal compatibility shim for Minecraft's Attribute.

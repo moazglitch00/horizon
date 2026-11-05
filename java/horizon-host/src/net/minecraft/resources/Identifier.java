@@ -1,10 +1,11 @@
-package net.minecraft.util;
+package net.minecraft.resources;
 
 import java.util.Objects;
 
 /**
- * Minimal compatibility shim for Minecraft's Identifier.
- * Delegates to Rust for validation but stores the value locally.
+ * Minimal compatibility shim for Minecraft's Identifier (renamed from
+ * ResourceLocation in the 26.x era and moved to {@code net.minecraft.resources}).
+ * Stores the value locally.
  * Phase 2 of fabric-runtime: Minecraft Java compatibility layer.
  */
 public final class Identifier {

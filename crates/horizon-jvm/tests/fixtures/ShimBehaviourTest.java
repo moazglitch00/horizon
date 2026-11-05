@@ -1,6 +1,6 @@
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.Container;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;

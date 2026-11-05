@@ -28,8 +28,8 @@ command output in `INTEGRATION_LOG.md`.
 
 | ID | Task | Owner | Why |
 |---|---|---|---|
-| T-240 | Rename the 8 shims that do not exist in a 26.x jar to their real paths (`MinecraftClient`→`Minecraft`, `util.Identifier`+`ResourceLocation`→`resources.Identifier`, `PlayerEntity`→`Player`, `ClientWorld`→`client.multiplayer.ClientLevel`, `ServerWorld`→`server.level.ServerLevel`, `attributes.Attribute`→`world.entity.ai.attributes.Attribute`, delete `network.chat.Text`) and update every reference + `SOURCES` | java-specialist + PM | 39/47 shims already match `26.1.2.jar`; these 8 cannot link at all |
-| T-241 | Signature audit of the 39 correctly-named shims against `26.1.2.jar` (`javap -p`), list every missing/incorrect member | research-specialist | names alone do not link; descriptors must match |
+| T-240 | Rename the 8 shims that do not exist in a 26.x jar to their real paths (`MinecraftClient`→`Minecraft`, `util.Identifier`+`ResourceLocation`→`resources.Identifier`, `PlayerEntity`→`Player`, `ClientWorld`→`client.multiplayer.ClientLevel`, `ServerWorld`→`server.level.ServerLevel`, `attributes.Attribute`→`world.entity.ai.attributes.Attribute`, delete `network.chat.Text`) and update every reference + `SOURCES` | java-specialist + PM | **done** — 45/45 paths exist in `26.1.2.jar`; `shim_paths_match_the_verified_26x_set` passes |
+| T-241 | Grow public/protected member conformance against a real 26.x jar, worst classes first, re-measuring per batch | java-specialist + PM | `tools/fabric_shim_coverage.py` measures **3.6%** methods (120/3338) / **1.5%** fields (9/589); paths alone do not link |
 | T-242 | Seed the `Event` + lifecycle classes from T-211 with real `invoker()` dispatch | fabric-specialist | first Fabric API behaviour |
 | T-230 | Legacy: remap ≤1.21 intermediary mods | deferred | 26.x mods use named classes; no 26.3 mappings on disk |
 

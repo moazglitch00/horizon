@@ -5,6 +5,44 @@ what proved it, and what it did **not** prove.
 
 ---
 
+## 2026-11-05 — T-240: all 45 shim paths match a real 26.x jar
+
+### Change
+- Renamed 8 shims that did not exist in `26.1.2.jar` to their real paths:
+  `client.MinecraftClient`→`client.Minecraft`,
+  `util.Identifier` + `resources.ResourceLocation`→`resources.Identifier`,
+  `world.entity.player.PlayerEntity`→`world.entity.player.Player`,
+  `world.level.ClientWorld`→`client.multiplayer.ClientLevel`,
+  `world.level.ServerWorld`→`server.level.ServerLevel`,
+  `attributes.Attribute`→`world.entity.ai.attributes.Attribute`.
+- Deleted `net/minecraft/network/chat/Text.java`: no such class exists in the
+  real jar (26.x uses `net.minecraft.network.chat.Component`).
+- Updated every import/reference in the remaining shims, the behaviour fixture
+  and `SOURCES` (62 entries, still 1:1 with the files on disk).
+- Added `tools/fabric_shim_coverage.py`: compiles the shims and compares every
+  public/protected method and field (name **and** descriptor) with a real jar.
+
+### Proof
+```
+45/45 shim paths exist in 26.1.2.jar
+cargo test -p horizon-jvm
+test result: ok. 6 passed  (unit)
+test result: ok. 10 passed (tests/host.rs, incl. shim_paths_match_the_verified_26x_set)
+test result: ok. 10 passed (protocol)
+test result: ok. 1 passed  (registry dump)
+cargo clippy -p horizon-jvm --all-targets -- -D warnings   # clean
+```
+
+### Measurement this exposed
+```
+python tools/fabric_shim_coverage.py --jar .../26.1.2.jar --jdk .../jdk-21
+PUBLIC/PROTECTED METHODS: 120/3338 = 3.6%
+PUBLIC/PROTECTED FIELDS:    9/589 = 1.5%
+```
+
+Did **not** prove: that a mod links or runs. Path conformance is necessary, not
+sufficient — a mod calls members, and 96.4% of them are missing (T-241).
+
 ## 2026-11-04 — T-214: the audited silent fakes are gone
 
 ### Change

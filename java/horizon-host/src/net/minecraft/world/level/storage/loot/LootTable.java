@@ -1,6 +1,6 @@
 package net.minecraft.world.level.storage.loot;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 
 /**
  * Minimal compatibility shim for Minecraft's LootTable.

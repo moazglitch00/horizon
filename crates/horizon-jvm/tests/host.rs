@@ -562,8 +562,8 @@ fn shim_behaviour_is_not_silent() {
     let mut sources = Vec::new();
     collect(&shims, &mut sources);
     assert!(
-        sources.len() >= 58,
-        "expected the full net/minecraft shim tree, found {} sources",
+        sources.len() >= 56,
+        "expected the full net/minecraft + net/fabricmc shim tree, found {} sources",
         sources.len()
     );
 
@@ -599,4 +599,118 @@ fn shim_behaviour_is_not_silent() {
         output.status.success() && stdout.contains("SHIM-OK"),
         "fixture failed\nstdout:\n{stdout}\nstderr:\n{stderr}"
     );
+}
+
+/// The `net/minecraft` shim paths were verified against a real `26.1.2.jar`
+/// (30,675 entries, zero `class_*`): every path below exists in it. T-240
+/// renamed the 8 that used Yarn/older names (`MinecraftClient`,
+/// `util/Identifier`, `PlayerEntity`, `ClientWorld`, `ServerWorld`,
+/// `ResourceLocation`, `attributes/Attribute`, `network/chat/Text`). Adding,
+/// removing or renaming a shim must update this list deliberately, and the
+/// legacy names must never come back.
+#[test]
+fn shim_paths_match_the_verified_26x_set() {
+    use std::collections::BTreeSet;
+
+    const VERIFIED: &[&str] = &[
+        "net/minecraft/client/Minecraft.java",
+        "net/minecraft/client/gui/screens/Screen.java",
+        "net/minecraft/client/multiplayer/ClientLevel.java",
+        "net/minecraft/commands/CommandSourceStack.java",
+        "net/minecraft/core/BlockPos.java",
+        "net/minecraft/core/Registry.java",
+        "net/minecraft/core/particles/ParticleType.java",
+        "net/minecraft/core/particles/SimpleParticleType.java",
+        "net/minecraft/network/FriendlyByteBuf.java",
+        "net/minecraft/network/chat/Component.java",
+        "net/minecraft/network/protocol/Packet.java",
+        "net/minecraft/network/syncher/EntityDataAccessor.java",
+        "net/minecraft/resources/Identifier.java",
+        "net/minecraft/server/MinecraftServer.java",
+        "net/minecraft/server/level/ServerLevel.java",
+        "net/minecraft/sounds/SoundEvent.java",
+        "net/minecraft/world/Container.java",
+        "net/minecraft/world/damagesource/DamageSource.java",
+        "net/minecraft/world/effect/MobEffect.java",
+        "net/minecraft/world/entity/Entity.java",
+        "net/minecraft/world/entity/EntityType.java",
+        "net/minecraft/world/entity/LivingEntity.java",
+        "net/minecraft/world/entity/Mob.java",
+        "net/minecraft/world/entity/ai/attributes/Attribute.java",
+        "net/minecraft/world/entity/ai/attributes/AttributeSupplier.java",
+        "net/minecraft/world/entity/ai/goal/Goal.java",
+        "net/minecraft/world/entity/player/Player.java",
+        "net/minecraft/world/inventory/AbstractContainerMenu.java",
+        "net/minecraft/world/item/CreativeModeTab.java",
+        "net/minecraft/world/item/Item.java",
+        "net/minecraft/world/item/ItemStack.java",
+        "net/minecraft/world/item/crafting/Recipe.java",
+        "net/minecraft/world/item/crafting/RecipeManager.java",
+        "net/minecraft/world/item/enchantment/Enchantment.java",
+        "net/minecraft/world/level/ChunkPos.java",
+        "net/minecraft/world/level/Level.java",
+        "net/minecraft/world/level/block/Block.java",
+        "net/minecraft/world/level/block/entity/BlockEntity.java",
+        "net/minecraft/world/level/block/entity/BlockEntityType.java",
+        "net/minecraft/world/level/block/state/BlockState.java",
+        "net/minecraft/world/level/chunk/ChunkAccess.java",
+        "net/minecraft/world/level/chunk/LevelChunk.java",
+        "net/minecraft/world/level/storage/loot/LootContext.java",
+        "net/minecraft/world/level/storage/loot/LootTable.java",
+        "net/minecraft/world/phys/Vec3.java",
+    ];
+
+    /// Yarn/older paths that do not exist in a 26.x jar and were renamed.
+    const REMOVED: &[&str] = &[
+        "net/minecraft/client/MinecraftClient.java",
+        "net/minecraft/util/Identifier.java",
+        "net/minecraft/resources/ResourceLocation.java",
+        "net/minecraft/world/entity/player/PlayerEntity.java",
+        "net/minecraft/world/level/ClientWorld.java",
+        "net/minecraft/world/level/ServerWorld.java",
+        "net/minecraft/attributes/Attribute.java",
+        "net/minecraft/network/chat/Text.java",
+    ];
+
+    fn walk(dir: &std::path::Path, base: &std::path::Path, out: &mut Vec<String>) {
+        for entry in std::fs::read_dir(dir).expect("read shim dir") {
+            let path = entry.expect("dir entry").path();
+            if path.is_dir() {
+                walk(&path, base, out);
+            } else if path.extension().is_some_and(|ext| ext == "java") {
+                out.push(
+                    path.strip_prefix(base)
+                        .expect("strip src prefix")
+                        .to_string_lossy()
+                        .replace('\\', "/"),
+                );
+            }
+        }
+    }
+
+    let src = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("java")
+        .join("horizon-host")
+        .join("src");
+    let mut files = Vec::new();
+    walk(&src.join("net").join("minecraft"), &src, &mut files);
+    let found: BTreeSet<String> = files.into_iter().collect();
+    let expected: BTreeSet<String> = VERIFIED.iter().map(|s| (*s).to_string()).collect();
+
+    let missing: Vec<&String> = expected.difference(&found).collect();
+    let added: Vec<&String> = found.difference(&expected).collect();
+    assert!(
+        missing.is_empty() && added.is_empty(),
+        "shim set changed; verify against a 26.x jar, then update VERIFIED.\n\
+         missing: {missing:?}\nunexpected: {added:?}"
+    );
+
+    for legacy in REMOVED {
+        assert!(
+            !found.contains(*legacy),
+            "{legacy} does not exist in a 26.x jar and must not come back"
+        );
+    }
 }

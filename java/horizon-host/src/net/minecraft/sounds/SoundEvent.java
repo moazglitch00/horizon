@@ -1,6 +1,6 @@
 package net.minecraft.sounds;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 
 import java.util.Objects;
 import java.util.Optional;

@@ -1,6 +1,6 @@
 package net.minecraft.world.effect;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 
 /**
  * Minimal compatibility shim for Minecraft's MobEffect (StatusEffect).

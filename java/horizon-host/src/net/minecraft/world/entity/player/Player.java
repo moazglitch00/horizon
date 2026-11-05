@@ -1,18 +1,18 @@
 package net.minecraft.world.entity.player;
 
 import net.minecraft.world.entity.Entity;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 
 /**
- * Minimal compatibility shim for Minecraft's PlayerEntity.
+ * Minimal compatibility shim for Minecraft's Player.
  * Phase 2 of fabric-runtime: Minecraft Java compatibility layer.
  */
-public class PlayerEntity extends Entity {
+public class Player extends Entity {
     private String name;
     private int experienceLevel = 0;
     private float health = 20.0f;
 
-    public PlayerEntity(Identifier type, String name) {
+    public Player(Identifier type, String name) {
         super(type);
         this.name = name;
     }
@@ -39,6 +39,6 @@ public class PlayerEntity extends Entity {
 
     @Override
     public String toString() {
-        return "PlayerEntity[" + name + "]";
+        return "Player[" + name + "]";
     }
 }

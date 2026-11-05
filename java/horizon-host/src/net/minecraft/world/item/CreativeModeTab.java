@@ -1,7 +1,7 @@
 package net.minecraft.world.item;
 
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 
 /**
  * Minimal compatibility shim for Minecraft's CreativeModeTab (ItemGroup).

@@ -1,6 +1,6 @@
 package net.minecraft.world.entity.ai.attributes;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

@@ -52,8 +52,8 @@ pub const SOURCES: &[(&str, &str)] = &[
         include_str!("../../../java/horizon-host/src/horizon/host/HeadlessLauncher.java"),
     ),
     (
-        "net/minecraft/util/Identifier.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/util/Identifier.java"),
+        "net/minecraft/resources/Identifier.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/resources/Identifier.java"),
     ),
     (
         "net/minecraft/core/Registry.java",
@@ -90,26 +90,28 @@ pub const SOURCES: &[(&str, &str)] = &[
         include_str!("../../../java/horizon-host/src/net/minecraft/network/chat/Component.java"),
     ),
     (
-        "net/minecraft/client/MinecraftClient.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/client/MinecraftClient.java"),
+        "net/minecraft/client/Minecraft.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/client/Minecraft.java"),
     ),
     (
         "net/minecraft/server/MinecraftServer.java",
         include_str!("../../../java/horizon-host/src/net/minecraft/server/MinecraftServer.java"),
     ),
     (
-        "net/minecraft/world/entity/player/PlayerEntity.java",
+        "net/minecraft/world/entity/player/Player.java",
         include_str!(
-            "../../../java/horizon-host/src/net/minecraft/world/entity/player/PlayerEntity.java"
+            "../../../java/horizon-host/src/net/minecraft/world/entity/player/Player.java"
         ),
     ),
     (
-        "net/minecraft/world/level/ClientWorld.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/ClientWorld.java"),
+        "net/minecraft/client/multiplayer/ClientLevel.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/client/multiplayer/ClientLevel.java"
+        ),
     ),
     (
-        "net/minecraft/world/level/ServerWorld.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/ServerWorld.java"),
+        "net/minecraft/server/level/ServerLevel.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/server/level/ServerLevel.java"),
     ),
     (
         "net/minecraft/world/level/ChunkPos.java",
@@ -150,8 +152,10 @@ pub const SOURCES: &[(&str, &str)] = &[
         ),
     ),
     (
-        "net/minecraft/attributes/Attribute.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/attributes/Attribute.java"),
+        "net/minecraft/world/entity/ai/attributes/Attribute.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/entity/ai/attributes/Attribute.java"
+        ),
     ),
     (
         "net/minecraft/client/gui/screens/Screen.java",
@@ -203,16 +207,6 @@ pub const SOURCES: &[(&str, &str)] = &[
         "net/minecraft/network/syncher/EntityDataAccessor.java",
         include_str!(
             "../../../java/horizon-host/src/net/minecraft/network/syncher/EntityDataAccessor.java"
-        ),
-    ),
-    (
-        "net/minecraft/network/chat/Text.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/network/chat/Text.java"),
-    ),
-    (
-        "net/minecraft/resources/ResourceLocation.java",
-        include_str!(
-            "../../../java/horizon-host/src/net/minecraft/resources/ResourceLocation.java"
         ),
     ),
     (
