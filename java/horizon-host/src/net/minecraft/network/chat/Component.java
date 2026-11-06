@@ -1,29 +1,26 @@
 package net.minecraft.network.chat;
 
 /**
- * Minimal compatibility shim for Minecraft's Component/Text.
- * Phase 2 of fabric-runtime: Minecraft Java compatibility layer.
+ * Compatibility shim for Minecraft's Component.
+ * Chat/text component for display.
  */
-public interface Component {
-    String getString();
+public class Component {
+    private final String text;
 
-    static Component literal(String text) {
-        return new LiteralComponent(text);
+    private Component(String text) {
+        this.text = text;
     }
 
-    static Component empty() {
-        return new LiteralComponent("");
+    public static Component literal(String text) {
+        return new Component(text);
     }
 
-    record LiteralComponent(String text) implements Component {
-        @Override
-        public String getString() {
-            return text;
-        }
+    public String getString() {
+        return text;
+    }
 
-        @Override
-        public String toString() {
-            return text;
-        }
+    @Override
+    public String toString() {
+        return text;
     }
 }

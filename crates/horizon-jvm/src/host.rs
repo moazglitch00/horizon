@@ -36,221 +36,33 @@ const TAIL_LINES: usize = 40;
 /// Rust crate was built from.
 pub const SOURCES: &[(&str, &str)] = &[
     (
-        "horizon/host/Wire.java",
-        include_str!("../../../java/horizon-host/src/horizon/host/Wire.java"),
-    ),
-    (
-        "horizon/host/Main.java",
-        include_str!("../../../java/horizon-host/src/horizon/host/Main.java"),
-    ),
-    (
         "horizon/host/Discovery.java",
         include_str!("../../../java/horizon-host/src/horizon/host/Discovery.java"),
+    ),
+    (
+        "horizon/host/Entrypoints.java",
+        include_str!("../../../java/horizon-host/src/horizon/host/Entrypoints.java"),
     ),
     (
         "horizon/host/HeadlessLauncher.java",
         include_str!("../../../java/horizon-host/src/horizon/host/HeadlessLauncher.java"),
     ),
     (
-        "net/minecraft/resources/Identifier.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/resources/Identifier.java"),
+        "horizon/host/HorizonGameProvider.java",
+        include_str!("../../../java/horizon-host/src/horizon/host/HorizonGameProvider.java"),
     ),
     (
-        "net/minecraft/IdentifierException.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/IdentifierException.java"),
+        "horizon/host/Main.java",
+        include_str!("../../../java/horizon-host/src/horizon/host/Main.java"),
     ),
     (
-        "net/minecraft/ChatFormatting.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/ChatFormatting.java"),
-    ),
-    (
-        "net/minecraft/core/Registry.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/core/Registry.java"),
-    ),
-    (
-        "net/minecraft/world/level/block/Block.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/block/Block.java"),
-    ),
-    (
-        "net/minecraft/world/item/Item.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/item/Item.java"),
-    ),
-    (
-        "net/minecraft/world/item/ItemStack.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/item/ItemStack.java"),
-    ),
-    (
-        "net/minecraft/world/entity/Entity.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/entity/Entity.java"),
-    ),
-    (
-        "net/minecraft/world/level/Level.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/Level.java"),
-    ),
-    (
-        "net/minecraft/world/level/block/state/BlockState.java",
-        include_str!(
-            "../../../java/horizon-host/src/net/minecraft/world/level/block/state/BlockState.java"
-        ),
-    ),
-    (
-        "net/minecraft/network/chat/Component.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/network/chat/Component.java"),
-    ),
-    (
-        "net/minecraft/network/chat/TextColor.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/network/chat/TextColor.java"),
-    ),
-    (
-        "net/minecraft/client/Minecraft.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/client/Minecraft.java"),
-    ),
-    (
-        "net/minecraft/server/MinecraftServer.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/server/MinecraftServer.java"),
-    ),
-    (
-        "net/minecraft/world/entity/player/Player.java",
-        include_str!(
-            "../../../java/horizon-host/src/net/minecraft/world/entity/player/Player.java"
-        ),
-    ),
-    (
-        "net/minecraft/client/multiplayer/ClientLevel.java",
-        include_str!(
-            "../../../java/horizon-host/src/net/minecraft/client/multiplayer/ClientLevel.java"
-        ),
-    ),
-    (
-        "net/minecraft/server/level/ServerLevel.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/server/level/ServerLevel.java"),
-    ),
-    (
-        "net/minecraft/world/level/ChunkPos.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/ChunkPos.java"),
-    ),
-    (
-        "net/minecraft/world/level/chunk/LevelChunk.java",
-        include_str!(
-            "../../../java/horizon-host/src/net/minecraft/world/level/chunk/LevelChunk.java"
-        ),
-    ),
-    (
-        "net/minecraft/world/level/block/entity/BlockEntity.java",
-        include_str!(
-            "../../../java/horizon-host/src/net/minecraft/world/level/block/entity/BlockEntity.java"
-        ),
-    ),
-    (
-        "net/minecraft/world/entity/EntityType.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/entity/EntityType.java"),
-    ),
-    (
-        "net/minecraft/world/level/block/entity/BlockEntityType.java",
-        include_str!(
-            "../../../java/horizon-host/src/net/minecraft/world/level/block/entity/BlockEntityType.java"
-        ),
-    ),
-    (
-        "net/minecraft/world/item/CreativeModeTab.java",
-        include_str!(
-            "../../../java/horizon-host/src/net/minecraft/world/item/CreativeModeTab.java"
-        ),
-    ),
-    (
-        "net/minecraft/world/item/enchantment/Enchantment.java",
-        include_str!(
-            "../../../java/horizon-host/src/net/minecraft/world/item/enchantment/Enchantment.java"
-        ),
-    ),
-    (
-        "net/minecraft/world/entity/ai/attributes/Attribute.java",
-        include_str!(
-            "../../../java/horizon-host/src/net/minecraft/world/entity/ai/attributes/Attribute.java"
-        ),
-    ),
-    (
-        "net/minecraft/client/gui/screens/Screen.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/client/gui/screens/Screen.java"),
-    ),
-    (
-        "net/minecraft/world/inventory/AbstractContainerMenu.java",
-        include_str!(
-            "../../../java/horizon-host/src/net/minecraft/world/inventory/AbstractContainerMenu.java"
-        ),
-    ),
-    (
-        "net/minecraft/world/Container.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/Container.java"),
-    ),
-    (
-        "net/minecraft/world/damagesource/DamageSource.java",
-        include_str!(
-            "../../../java/horizon-host/src/net/minecraft/world/damagesource/DamageSource.java"
-        ),
-    ),
-    (
-        "net/minecraft/core/particles/ParticleType.java",
-        include_str!(
-            "../../../java/horizon-host/src/net/minecraft/core/particles/ParticleType.java"
-        ),
-    ),
-    (
-        "net/minecraft/sounds/SoundEvent.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/sounds/SoundEvent.java"),
-    ),
-    (
-        "net/minecraft/util/Mth.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/util/Mth.java"),
-    ),
-    (
-        "net/minecraft/world/effect/MobEffect.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/effect/MobEffect.java"),
-    ),
-    (
-        "net/minecraft/world/item/crafting/Recipe.java",
-        include_str!(
-            "../../../java/horizon-host/src/net/minecraft/world/item/crafting/Recipe.java"
-        ),
-    ),
-    (
-        "net/minecraft/world/level/storage/loot/LootTable.java",
-        include_str!(
-            "../../../java/horizon-host/src/net/minecraft/world/level/storage/loot/LootTable.java"
-        ),
-    ),
-    (
-        "net/minecraft/network/syncher/EntityDataAccessor.java",
-        include_str!(
-            "../../../java/horizon-host/src/net/minecraft/network/syncher/EntityDataAccessor.java"
-        ),
-    ),
-    (
-        "net/fabricmc/fabric/api/event/Event.java",
-        include_str!("../../../java/horizon-host/src/net/fabricmc/fabric/api/event/Event.java"),
-    ),
-    (
-        "net/fabricmc/fabric/api/event/lifecycle/v1/ServerLifecycleEvents.java",
-        include_str!(
-            "../../../java/horizon-host/src/net/fabricmc/fabric/api/event/lifecycle/v1/ServerLifecycleEvents.java"
-        ),
+        "horizon/host/Wire.java",
+        include_str!("../../../java/horizon-host/src/horizon/host/Wire.java"),
     ),
     (
         "net/fabricmc/fabric/api/client/event/lifecycle/v1/ClientLifecycleEvents.java",
         include_str!(
             "../../../java/horizon-host/src/net/fabricmc/fabric/api/client/event/lifecycle/v1/ClientLifecycleEvents.java"
-        ),
-    ),
-    (
-        "net/fabricmc/fabric/api/item/v1/FabricItemSettings.java",
-        include_str!(
-            "../../../java/horizon-host/src/net/fabricmc/fabric/api/item/v1/FabricItemSettings.java"
-        ),
-    ),
-    (
-        "net/fabricmc/fabric/api/object/builder/v1/block/FabricBlockSettings.java",
-        include_str!(
-            "../../../java/horizon-host/src/net/fabricmc/fabric/api/object/builder/v1/block/FabricBlockSettings.java"
         ),
     ),
     (
@@ -272,9 +84,53 @@ pub const SOURCES: &[(&str, &str)] = &[
         ),
     ),
     (
-        "net/minecraft/world/level/chunk/ChunkAccess.java",
+        "net/fabricmc/fabric/api/event/Event.java",
+        include_str!("../../../java/horizon-host/src/net/fabricmc/fabric/api/event/Event.java"),
+    ),
+    (
+        "net/fabricmc/fabric/api/event/lifecycle/v1/ServerLifecycleEvents.java",
         include_str!(
-            "../../../java/horizon-host/src/net/minecraft/world/level/chunk/ChunkAccess.java"
+            "../../../java/horizon-host/src/net/fabricmc/fabric/api/event/lifecycle/v1/ServerLifecycleEvents.java"
+        ),
+    ),
+    (
+        "net/fabricmc/fabric/api/item/v1/FabricItemSettings.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/fabricmc/fabric/api/item/v1/FabricItemSettings.java"
+        ),
+    ),
+    (
+        "net/fabricmc/fabric/api/object/builder/v1/block/FabricBlockSettings.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/fabricmc/fabric/api/object/builder/v1/block/FabricBlockSettings.java"
+        ),
+    ),
+    (
+        "net/minecraft/ChatFormatting.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/ChatFormatting.java"),
+    ),
+    (
+        "net/minecraft/IdentifierException.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/IdentifierException.java"),
+    ),
+    (
+        "net/minecraft/client/Minecraft.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/client/Minecraft.java"),
+    ),
+    (
+        "net/minecraft/client/gui/screens/Screen.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/client/gui/screens/Screen.java"),
+    ),
+    (
+        "net/minecraft/client/multiplayer/ClientLevel.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/client/multiplayer/ClientLevel.java"
+        ),
+    ),
+    (
+        "net/minecraft/commands/CommandSourceStack.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/commands/CommandSourceStack.java"
         ),
     ),
     (
@@ -282,36 +138,248 @@ pub const SOURCES: &[(&str, &str)] = &[
         include_str!("../../../java/horizon-host/src/net/minecraft/core/BlockPos.java"),
     ),
     (
-        "net/minecraft/core/Vec3i.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/core/Vec3i.java"),
-    ),
-    (
         "net/minecraft/core/Direction.java",
         include_str!("../../../java/horizon-host/src/net/minecraft/core/Direction.java"),
+    ),
+    (
+        "net/minecraft/core/Holder.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/core/Holder.java"),
     ),
     (
         "net/minecraft/core/Position.java",
         include_str!("../../../java/horizon-host/src/net/minecraft/core/Position.java"),
     ),
     (
-        "net/minecraft/world/phys/Vec3.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/phys/Vec3.java"),
+        "net/minecraft/core/Registry.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/core/Registry.java"),
     ),
     (
-        "net/minecraft/world/phys/Vec2.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/phys/Vec2.java"),
+        "net/minecraft/core/Vec3i.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/core/Vec3i.java"),
     ),
     (
-        "net/minecraft/world/phys/AABB.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/phys/AABB.java"),
+        "net/minecraft/core/particles/ParticleType.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/core/particles/ParticleType.java"
+        ),
     ),
     (
-        "net/minecraft/world/phys/BlockHitResult.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/phys/BlockHitResult.java"),
+        "net/minecraft/core/particles/SimpleParticleType.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/core/particles/SimpleParticleType.java"
+        ),
     ),
     (
-        "net/minecraft/world/phys/HitResult.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/phys/HitResult.java"),
+        "net/minecraft/network/FriendlyByteBuf.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/network/FriendlyByteBuf.java"),
+    ),
+    (
+        "net/minecraft/network/chat/Component.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/network/chat/Component.java"),
+    ),
+    (
+        "net/minecraft/network/chat/TextColor.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/network/chat/TextColor.java"),
+    ),
+    (
+        "net/minecraft/network/protocol/Packet.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/network/protocol/Packet.java"),
+    ),
+    (
+        "net/minecraft/network/syncher/EntityDataAccessor.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/network/syncher/EntityDataAccessor.java"
+        ),
+    ),
+    (
+        "net/minecraft/resources/Identifier.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/resources/Identifier.java"),
+    ),
+    (
+        "net/minecraft/resources/RegistryKey.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/resources/RegistryKey.java"),
+    ),
+    (
+        "net/minecraft/resources/ResourceKey.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/resources/ResourceKey.java"),
+    ),
+    (
+        "net/minecraft/resources/TagKey.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/resources/TagKey.java"),
+    ),
+    (
+        "net/minecraft/server/MinecraftServer.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/server/MinecraftServer.java"),
+    ),
+    (
+        "net/minecraft/server/level/ServerLevel.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/server/level/ServerLevel.java"),
+    ),
+    (
+        "net/minecraft/server/permissions/PermissionSet.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/server/permissions/PermissionSet.java"
+        ),
+    ),
+    (
+        "net/minecraft/server/permissions/Permissions.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/server/permissions/Permissions.java"
+        ),
+    ),
+    (
+        "net/minecraft/sounds/SoundEvent.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/sounds/SoundEvent.java"),
+    ),
+    (
+        "net/minecraft/tags/TagKey.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/tags/TagKey.java"),
+    ),
+    (
+        "net/minecraft/util/Mth.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/util/Mth.java"),
+    ),
+    (
+        "net/minecraft/util/RandomSource.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/util/RandomSource.java"),
+    ),
+    (
+        "net/minecraft/world/Container.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/Container.java"),
+    ),
+    (
+        "net/minecraft/world/InteractionHand.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/InteractionHand.java"),
+    ),
+    (
+        "net/minecraft/world/InteractionResult.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/InteractionResult.java"),
+    ),
+    (
+        "net/minecraft/world/damagesource/DamageSource.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/damagesource/DamageSource.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/effect/MobEffect.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/effect/MobEffect.java"),
+    ),
+    (
+        "net/minecraft/world/entity/Entity.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/entity/Entity.java"),
+    ),
+    (
+        "net/minecraft/world/entity/EntityType.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/entity/EntityType.java"),
+    ),
+    (
+        "net/minecraft/world/entity/LivingEntity.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/entity/LivingEntity.java"),
+    ),
+    (
+        "net/minecraft/world/entity/Mob.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/entity/Mob.java"),
+    ),
+    (
+        "net/minecraft/world/entity/MobCategory.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/entity/MobCategory.java"),
+    ),
+    (
+        "net/minecraft/world/entity/ai/attributes/Attribute.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/entity/ai/attributes/Attribute.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/entity/ai/attributes/AttributeSupplier.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/entity/ai/attributes/AttributeSupplier.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/entity/ai/goal/Goal.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/entity/ai/goal/Goal.java"),
+    ),
+    (
+        "net/minecraft/world/entity/player/Player.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/entity/player/Player.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/inventory/AbstractContainerMenu.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/inventory/AbstractContainerMenu.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/item/CreativeModeTab.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/item/CreativeModeTab.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/item/FoodProperties.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/item/FoodProperties.java"),
+    ),
+    (
+        "net/minecraft/world/item/Item.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/item/Item.java"),
+    ),
+    (
+        "net/minecraft/world/item/ItemStack.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/item/ItemStack.java"),
+    ),
+    (
+        "net/minecraft/world/item/component/ItemContainerContents.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/item/component/ItemContainerContents.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/item/crafting/Recipe.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/item/crafting/Recipe.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/item/crafting/RecipeManager.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/item/crafting/RecipeManager.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/item/crafting/RecipeType.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/item/crafting/RecipeType.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/item/enchantment/Enchantment.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/item/enchantment/Enchantment.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/BlockGetter.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/BlockGetter.java"),
+    ),
+    (
+        "net/minecraft/world/level/ChunkPos.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/ChunkPos.java"),
+    ),
+    (
+        "net/minecraft/world/level/Explosion.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/Explosion.java"),
+    ),
+    (
+        "net/minecraft/world/level/Level.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/Level.java"),
+    ),
+    (
+        "net/minecraft/world/level/block/Block.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/level/block/Block.java"),
     ),
     (
         "net/minecraft/world/level/block/Rotation.java",
@@ -320,13 +388,81 @@ pub const SOURCES: &[(&str, &str)] = &[
         ),
     ),
     (
-        "net/minecraft/util/RandomSource.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/util/RandomSource.java"),
+        "net/minecraft/world/level/block/entity/BlockEntity.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/block/entity/BlockEntity.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/block/entity/BlockEntityType.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/block/entity/BlockEntityType.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/block/state/BlockState.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/block/state/BlockState.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/block/state/RenderShape.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/block/state/RenderShape.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/block/state/StateDefinition.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/block/state/StateDefinition.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/block/state/properties/BlockStateProperties.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/block/state/properties/BlockStateProperties.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/block/state/properties/Property.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/block/state/properties/Property.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/chunk/ChunkAccess.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/chunk/ChunkAccess.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/chunk/LevelChunk.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/chunk/LevelChunk.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/difficulty/Difficulty.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/difficulty/Difficulty.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/gamerules/GameRules.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/gamerules/GameRules.java"
+        ),
     ),
     (
         "net/minecraft/world/level/levelgen/BitRandomSource.java",
         include_str!(
             "../../../java/horizon-host/src/net/minecraft/world/level/levelgen/BitRandomSource.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/levelgen/HeightmapTypes.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/levelgen/HeightmapTypes.java"
         ),
     ),
     (
@@ -366,15 +502,45 @@ pub const SOURCES: &[(&str, &str)] = &[
         ),
     ),
     (
-        "net/minecraft/core/particles/SimpleParticleType.java",
+        "net/minecraft/world/level/material/CollisionContext.java",
         include_str!(
-            "../../../java/horizon-host/src/net/minecraft/core/particles/SimpleParticleType.java"
+            "../../../java/horizon-host/src/net/minecraft/world/level/material/CollisionContext.java"
         ),
     ),
     (
-        "net/minecraft/world/item/crafting/RecipeManager.java",
+        "net/minecraft/world/level/material/Fluid.java",
         include_str!(
-            "../../../java/horizon-host/src/net/minecraft/world/item/crafting/RecipeManager.java"
+            "../../../java/horizon-host/src/net/minecraft/world/level/material/Fluid.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/material/FluidState.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/material/FluidState.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/material/Fluids.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/material/Fluids.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/material/MapColor.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/material/MapColor.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/material/VoxelShape.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/material/VoxelShape.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/server/ServerLevel.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/server/ServerLevel.java"
         ),
     ),
     (
@@ -384,44 +550,36 @@ pub const SOURCES: &[(&str, &str)] = &[
         ),
     ),
     (
-        "net/minecraft/commands/CommandSourceStack.java",
+        "net/minecraft/world/level/storage/loot/LootTable.java",
         include_str!(
-            "../../../java/horizon-host/src/net/minecraft/commands/CommandSourceStack.java"
+            "../../../java/horizon-host/src/net/minecraft/world/level/storage/loot/LootTable.java"
         ),
     ),
     (
-        "net/minecraft/network/protocol/Packet.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/network/protocol/Packet.java"),
+        "net/minecraft/world/phys/AABB.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/phys/AABB.java"),
     ),
     (
-        "net/minecraft/network/FriendlyByteBuf.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/network/FriendlyByteBuf.java"),
+        "net/minecraft/world/phys/BlockHitResult.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/phys/BlockHitResult.java"),
     ),
     (
-        "net/minecraft/world/entity/LivingEntity.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/entity/LivingEntity.java"),
+        "net/minecraft/world/phys/HitResult.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/phys/HitResult.java"),
     ),
     (
-        "net/minecraft/world/entity/Mob.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/entity/Mob.java"),
+        "net/minecraft/world/phys/Vec2.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/phys/Vec2.java"),
     ),
     (
-        "net/minecraft/world/entity/ai/goal/Goal.java",
-        include_str!("../../../java/horizon-host/src/net/minecraft/world/entity/ai/goal/Goal.java"),
+        "net/minecraft/world/phys/Vec3.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/phys/Vec3.java"),
     ),
     (
-        "net/minecraft/world/entity/ai/attributes/AttributeSupplier.java",
+        "net/minecraft/world/phys/shapes/VoxelShapes.java",
         include_str!(
-            "../../../java/horizon-host/src/net/minecraft/world/entity/ai/attributes/AttributeSupplier.java"
+            "../../../java/horizon-host/src/net/minecraft/world/phys/shapes/VoxelShapes.java"
         ),
-    ),
-    (
-        "horizon/host/Entrypoints.java",
-        include_str!("../../../java/horizon-host/src/horizon/host/Entrypoints.java"),
-    ),
-    (
-        "horizon/host/HorizonGameProvider.java",
-        include_str!("../../../java/horizon-host/src/horizon/host/HorizonGameProvider.java"),
     ),
 ];
 
