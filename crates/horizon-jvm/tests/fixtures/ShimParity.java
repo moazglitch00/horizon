@@ -5,6 +5,7 @@ import java.util.function.IntPredicate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
+import net.minecraft.ChatFormatting;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -18,6 +19,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.network.chat.TextColor;
 
 /**
  * Differential parity fixture for the shim layer.
@@ -133,6 +135,7 @@ public final class ShimParity {
         mthBits();
         rng();
         aabb();
+        chat();
         vectorMath();
         blockPos();
         chunkPos();
@@ -175,8 +178,8 @@ public final class ShimParity {
             pd("mth.frac.d." + i, Mth.frac(d));
             p("mth.sign." + i, Mth.sign(d));
             pd("mth.square.d." + i, Mth.square(d));
-            pd("mth.smoothstep." + i, Mth.smoothstep(d));
-            pd("mth.smoothstepDerivative." + i, Mth.smoothstepDerivative(d));
+            pf("mth.smoothstep." + i, Mth.smoothstep((float) d));
+            pf("mth.smoothstepDerivative." + i, Mth.smoothstepDerivative((float) d));
             pf("mth.wrapDegrees.d." + i, (float) Mth.wrapDegrees(d));
             pf("mth.rotLerp.d." + i, (float) Mth.rotLerp(0.25, 10.0, d));
         }
@@ -410,11 +413,75 @@ public final class ShimParity {
     }
 
     /**
-     * AABB coverage: construction, geometry, overlap, clipping and the
-     * {@link net.minecraft.world.phys.HitResult} it produces. NaN boxes are
-     * only exercised through {@code hasNaN}, where no comparison is
-     * ambiguous.
+     * ChatFormatting and TextColor (26.3 surface): the codes, the 16 static
+     * TextColor constants and the legacy/fromRgb colour paths, all verified
+     * against a real 26.3 jar.
      */
+    private static void chat() {
+        for (ChatFormatting format : ChatFormatting.values()) {
+            String suffix = "." + format;
+            ps("cf.toString" + suffix, format.toString());
+            ps("cf.byCode" + suffix,
+                    String.valueOf(ChatFormatting.getByCode(format.toString().charAt(1))));
+            TextColor from = TextColor.fromLegacyFormat(format);
+            ps("tc.fromLegacy" + suffix, from == null ? "null" : from.serialize());
+            if (from != null) {
+                p("tc.fromLegacy.value" + suffix, from.getValue());
+                p("tc.fromLegacy.hash" + suffix, from.hashCode());
+                ps("tc.fromLegacy.toString" + suffix, from.toString());
+            }
+        }
+
+        TextColor[] constants = {
+            TextColor.BLACK, TextColor.DARK_BLUE, TextColor.DARK_GREEN, TextColor.DARK_AQUA,
+            TextColor.DARK_RED, TextColor.DARK_PURPLE, TextColor.GOLD, TextColor.GRAY,
+            TextColor.DARK_GRAY, TextColor.BLUE, TextColor.GREEN, TextColor.AQUA,
+            TextColor.RED, TextColor.LIGHT_PURPLE, TextColor.YELLOW, TextColor.WHITE,
+        };
+        String[] constantNames = {
+            "BLACK", "DARK_BLUE", "DARK_GREEN", "DARK_AQUA",
+            "DARK_RED", "DARK_PURPLE", "GOLD", "GRAY",
+            "DARK_GRAY", "BLUE", "GREEN", "AQUA",
+            "RED", "LIGHT_PURPLE", "YELLOW", "WHITE",
+        };
+        for (int i = 0; i < constants.length; i++) {
+            String suffix = "." + constantNames[i];
+            ps("tc.constant" + suffix, constants[i].serialize());
+            p("tc.constantValue" + suffix, constants[i].getValue());
+            p("tc.constantHash" + suffix, constants[i].hashCode());
+            p("tc.constantEquals" + suffix,
+                    constants[i].equals(constants[i]) ? 1 : 0);
+            p("tc.constantEqualsHex" + suffix,
+                    constants[i].equals(TextColor.fromRgb(constants[i].getValue())) ? 1 : 0);
+        }
+
+        int[] rgb = {0x000000, 0xFFFFFF, 0xFF0000, 0x00FF00, 0x0000FF, 0x123456,
+                0xABCDEF, 0x1FF0000, 0x80000000, 0xDEADBEEF};
+        for (int i = 0; i < rgb.length; i++) {
+            TextColor color = TextColor.fromRgb(rgb[i]);
+            p("tc.value." + i, color.getValue());
+            ps("tc.serialize." + i, color.serialize());
+            ps("tc.toString." + i, color.toString());
+            p("tc.hash." + i, color.hashCode());
+            p("tc.equalsSelf." + i, color.equals(TextColor.fromRgb(rgb[i])) ? 1 : 0);
+        }
+        TextColor redHex = TextColor.fromRgb(0xFF5555);
+        TextColor redNamed = TextColor.fromLegacyFormat(ChatFormatting.RED);
+        p("tc.equalsMixed.1", redHex.equals(redNamed) ? 1 : 0);
+        p("tc.equalsMixed.2", redNamed.equals(redHex) ? 1 : 0);
+        p("tc.equalsMixed.3", redHex.equals(TextColor.fromRgb(0x00FF5555)) ? 1 : 0);
+        p("tc.hashMixed.1", redHex.hashCode());
+        p("tc.hashMixed.2", redNamed.hashCode());
+
+        ps("cf.byCode.unknown", String.valueOf(ChatFormatting.getByCode('Z')));
+        ps("cf.strip.basic",
+                ChatFormatting.stripFormatting("\u00A70\u00A7Ltext\u00A7R"));
+        ps("cf.strip.mixed",
+                ChatFormatting.stripFormatting("a\u00A7Fb\u00A7cC"));
+        ps("cf.strip.double",
+                ChatFormatting.stripFormatting("\u00A7k\u00A7l\u00A7mcorrupt"));
+    }
+
     private static void aabb() {
         AABB box = new AABB(-3.75, -1.25, 0.5, 7.5, 9.0, 1.5);
         pd("aabb.minX", box.minX);
@@ -610,15 +677,6 @@ public final class ShimParity {
                         Vec3.directionFromRotation(new Vec2(angle, angle * 0.5F)).y);
                 pd("vec3.directionFromVec2." + i + "." + j + ".z",
                         Vec3.directionFromRotation(new Vec2(angle, angle * 0.5F)).z);
-                pd("vec3.applyLocal." + i + "." + j + ".x",
-                        Vec3.applyLocalCoordinatesToRotation(new Vec2(angle, angle * 0.5F), v).x);
-                pd("vec3.applyLocal." + i + "." + j + ".y",
-                        Vec3.applyLocalCoordinatesToRotation(new Vec2(angle, angle * 0.5F), v).y);
-                pd("vec3.applyLocal." + i + "." + j + ".z",
-                        Vec3.applyLocalCoordinatesToRotation(new Vec2(angle, angle * 0.5F), v).z);
-                pd("vec3.addLocal." + i + "." + j + ".x", v.addLocalCoordinates(v).x);
-                pd("vec3.addLocal." + i + "." + j + ".y", v.addLocalCoordinates(v).y);
-                pd("vec3.addLocal." + i + "." + j + ".z", v.addLocalCoordinates(v).z);
             }
             for (int j = 0; j < vectors.length; j++) {
                 Vec3 w = vectors[j];
@@ -655,6 +713,21 @@ public final class ShimParity {
         pd("vec3.align.xy.x", v.align(EnumSet.of(Direction.Axis.X, Direction.Axis.Y)).x);
         pd("vec3.align.xy.y", v.align(EnumSet.of(Direction.Axis.X, Direction.Axis.Y)).y);
         pd("vec3.align.xy.z", v.align(EnumSet.of(Direction.Axis.X, Direction.Axis.Y)).z);
+        Vec3i[] cellPositions = {
+            new Vec3i(1, 2, 3),
+            new Vec3i(-4, 100, 9),
+            new Vec3i(0, 0, 0),
+            new Vec3i(-123456, -64, 789),
+        };
+        double[] cellHeights = {7.25, -1.5, 0.0, 63.999};
+        for (int i = 0; i < cellPositions.length; i++) {
+            pd("vec3.atCenterOfWithY." + i + ".x",
+                    Vec3.atCenterOfWithY(cellPositions[i], cellHeights[i]).x);
+            pd("vec3.atCenterOfWithY." + i + ".y",
+                    Vec3.atCenterOfWithY(cellPositions[i], cellHeights[i]).y);
+            pd("vec3.atCenterOfWithY." + i + ".z",
+                    Vec3.atCenterOfWithY(cellPositions[i], cellHeights[i]).z);
+        }
         for (int i = 0; i + 1 < FLOATS.length; i += 2) {
             Vec2 a = new Vec2(FLOATS[i], FLOATS[i + 1]);
             pf("vec2.normalized." + i + ".x", a.normalized().x);
@@ -689,8 +762,8 @@ public final class ShimParity {
             p("blockpos.hashCode." + i, pos.hashCode());
             ps("blockpos.toString." + i, pos.toString());
             ps("blockpos.short." + i, pos.toShortString());
-            pd("blockpos.center." + i, pos.getCenter().distanceToSqr(Vec3.atCenterOf(pos)));
-            pd("blockpos.bottomCenter." + i, pos.getBottomCenter().length());
+            pd("blockpos.center." + i, Vec3.atCenterOf(pos).distanceToSqr(Vec3.ZERO));
+            pd("blockpos.bottomCenter." + i, Vec3.atBottomCenterOf(pos).length());
             pd("blockpos.distSqr." + i, pos.distSqr(BlockPos.ZERO));
             pd("blockpos.distToCenterSqr." + i, pos.distToCenterSqr(0.5, 0.5, 0.5));
             p("blockpos.distManhattan." + i, pos.distManhattan(BlockPos.ZERO));
@@ -727,7 +800,6 @@ public final class ShimParity {
 
     private static void chunkPos() {
         bootstrap();
-        p("chunkpos.maxCoordinate", ChunkPos.MAX_COORDINATE_VALUE);
         p("chunkpos.invalid", ChunkPos.INVALID_CHUNK_POS);
         p("chunkpos.regionSize", ChunkPos.REGION_SIZE);
         p("chunkpos.regionMaxIndex", ChunkPos.REGION_MAX_INDEX);

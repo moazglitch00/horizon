@@ -523,12 +523,16 @@ public class Mth {
                 + (3.0F * p1 - p0 - 3.0F * p2 + p3) * delta * delta * delta);
     }
 
-    public static double smoothstep(double delta) {
-        return delta * delta * delta * (delta * (delta * 6.0 - 15.0) + 10.0);
+    /**
+     * Vanilla's 26.3 signature is float-only; the double overloads were
+     * removed by vanilla.
+     */
+    public static float smoothstep(float delta) {
+        return delta * delta * delta * (delta * (delta * 6.0F - 15.0F) + 10.0F);
     }
 
-    public static double smoothstepDerivative(double delta) {
-        return 30.0 * delta * delta * (delta - 1.0) * (delta - 1.0);
+    public static float smoothstepDerivative(float delta) {
+        return 30.0F * delta * delta * (delta - 1.0F) * (delta - 1.0F);
     }
 
     public static int sign(double value) {

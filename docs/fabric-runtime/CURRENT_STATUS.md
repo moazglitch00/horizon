@@ -11,8 +11,8 @@
 - **Dual mod discovery**: `horizon-mods::dual::scan` finds both `.hmod` and `.jar` in one directory.
 - **Cross-format validation**: `horizon-mods::validate` checks duplicate IDs and conflicts.
 - **Entrypoint invocation**: `invoke_entrypoint` loads a class out of its own jar, instantiates it and calls `onInitialize()`. Verified for our own fixture only.
-- **`net.minecraft` compatibility layer**: 63 shims, every path exists in a real `26.1.2.jar`. The core value classes (`Mth`, `Vec2`, `Vec3`, `Vec3i`, `BlockPos`, `ChunkPos`, `Identifier`, `Direction`, `Rotation`), the RNG cluster (`RandomSource`, `BitRandomSource`, the three legacy sources, `MarsagliaPolarGaussian`, `PositionalRandomFactory`, `RandomSupport`) and `AABB` with its hit types (`HitResult`, `BlockHitResult`) are **bit-exact** against it: `tools/fabric_shim_parity.py` reports 5,849/5,849 identical values.
-- **Member coverage tooling**: `tools/fabric_shim_coverage.py` measures declared public/protected members against a real jar. Currently **16.8%** of methods (620/3685) and **10.4%** of fields (67/646).
+- **`net.minecraft` compatibility layer**: 65 shims, every path exists in a real `26.3.jar`. The core value classes (`Mth`, `Vec2`, `Vec3`, `Vec3i`, `BlockPos`, `ChunkPos`, `Identifier`, `Direction`, `Rotation`), the RNG cluster (`RandomSource`, `BitRandomSource`, the three legacy sources, `MarsagliaPolarGaussian`, `PositionalRandomFactory`, `RandomSupport`), `AABB` with its hit types (`HitResult`, `BlockHitResult`) and the formatting pair (`ChatFormatting`, `TextColor`) are **bit-exact** against it: `tools/fabric_shim_parity.py` reports 5,777/5,777 identical values against `26.3.jar`.
+- **Member coverage tooling**: `tools/fabric_shim_coverage.py` measures declared public/protected members against a real jar. Currently **16.6%** of methods (624/3758) and **20.8%** of fields (105/504) against `26.3.jar`.
 
 ### Not working
 
@@ -45,14 +45,12 @@
 2. A Mixin engine (`@Inject`/`@Shadow`/`@Redirect`), Phase 5.
 3. Fabric API event dispatch wired to game events.
 4. A gameplay bridge (Java `Level`/`Entity` calls serviced by Rust), Phase 6.
-5. A Minecraft Java **26.3** runtime: this machine has `26.1.2.jar` (used as ground truth) but no 26.3 classes.
-6. Multiplayer mod handshake.
+5. Multiplayer mod handshake.
 
 ### Honest assessment
 
 The foundation (discovery, version resolution, the framed host, entrypoints, and a
 bit-exact core shim set) is solid and tested. A real Java mod still does **not**
-run in Horizon: member coverage is 16.8%, Mixin is 0%, Fabric API dispatch is 0%,
-and the gameplay bridge is 0%. The largest remaining phases are T-241 (members),
-Phase 5 (Mixin) and Phase 6 (gameplay bridge), and they need the 26.3 runtime for
-final verification.
+run in Horizon: member coverage is 16.6% against `26.3.jar`, Mixin is 0%, Fabric API
+dispatch is 0%, and the gameplay bridge is 0%. The largest remaining phases are
+T-241 (members), Phase 5 (Mixin) and Phase 6 (gameplay bridge).

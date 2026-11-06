@@ -6,13 +6,19 @@ import net.minecraft.core.BlockPos;
 /**
  * Compatibility shim for Minecraft's ChunkPos: a chunk coordinate.
  * Packing, region math and distance helpers match the real vanilla
- * implementation (constants read from a real 26.x jar).
+ * implementation. The public surface is 26.3's: {@code MAX_COORDINATE_VALUE}
+ * was removed by vanilla (made private) and its boundary probed against a
+ * real 26.3 jar instead of being guessed: {@code isValid} is true for
+ * |v| <= 2097061.
  */
 public class ChunkPos {
     public static final int REGION_SIZE = 32;
     public static final int REGION_MAX_INDEX = 31;
-    /** Measured from a real 26.x jar after bootstrap. */
-    public static final int MAX_COORDINATE_VALUE = 2097061;
+    /**
+     * Vanilla keeps this bound private since 26.3; the value is unchanged:
+     * {@code isValid} flips at exactly |v| = 2097061 on a real 26.3 jar.
+     */
+    private static final int MAX_COORDINATE_VALUE = 2097061;
 
     /** Sentinal from a real 26.x jar: {@code pack(1875066, 1875066)}. */
     public static final long INVALID_CHUNK_POS = pack(1875066, 1875066);

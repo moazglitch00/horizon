@@ -60,6 +60,10 @@ pub const SOURCES: &[(&str, &str)] = &[
         include_str!("../../../java/horizon-host/src/net/minecraft/IdentifierException.java"),
     ),
     (
+        "net/minecraft/ChatFormatting.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/ChatFormatting.java"),
+    ),
+    (
         "net/minecraft/core/Registry.java",
         include_str!("../../../java/horizon-host/src/net/minecraft/core/Registry.java"),
     ),
@@ -92,6 +96,10 @@ pub const SOURCES: &[(&str, &str)] = &[
     (
         "net/minecraft/network/chat/Component.java",
         include_str!("../../../java/horizon-host/src/net/minecraft/network/chat/Component.java"),
+    ),
+    (
+        "net/minecraft/network/chat/TextColor.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/network/chat/TextColor.java"),
     ),
     (
         "net/minecraft/client/Minecraft.java",

@@ -59,7 +59,7 @@ edited only by the project-manager.
 | Task | Agent | Model | Files owned |
 |---|---|---|---|
 | T-240 rename 8 shims to real 26.x paths | java-specialist + PM | deepseek-v4.1-flash-free | **done** — 45/45 paths verified in `26.1.2.jar`; `shim_paths_match_the_verified_26x_set` |
-| T-241 grow public/protected member conformance | java-specialist + PM | deepseek-v4.1-flash-free | **in progress** — batches 1–3 proven bit-exact by `tools/fabric_shim_parity.py` (5,849/5,849); coverage now **16.8%** methods / **10.4%** fields. Next: `Component`/`Style`, `BlockState`/`BlockEntity` |
+| T-241 grow public/protected member conformance | java-specialist + PM | deepseek-v4.1-flash-free | **in progress** — batches 1–3 proven bit-exact by `tools/fabric_shim_parity.py` (5,777/5,777 vs `26.3.jar`); coverage now **16.6%** methods / **20.8%** fields against `26.3.jar`. Next: `Component`/`Style`, `BlockState`/`BlockEntity` |
 
 ## Retry policy
 

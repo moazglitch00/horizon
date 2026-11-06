@@ -47,6 +47,14 @@ public class Vec3 implements Position {
         return atLowerCornerWithOffset(vec, 0.5, 0.0, 0.5);
     }
 
+    /**
+     * Vanilla's 26.3 spelling: centre on X/Z from the block position, with an
+     * explicit Y instead of the block's own.
+     */
+    public static Vec3 atCenterOfWithY(Vec3i vec, double y) {
+        return new Vec3(vec.getX() + 0.5, y, vec.getZ() + 0.5);
+    }
+
     public static Vec3 upFromBottomCenterOf(Vec3i vec, double yOffset) {
         return atLowerCornerWithOffset(vec, 0.5, yOffset, 0.5);
     }
@@ -285,26 +293,6 @@ public class Vec3 implements Position {
             return other;
         }
         return other.scale(this.dot(other)).scale(1.0 / other.lengthSqr());
-    }
-
-    public static Vec3 applyLocalCoordinatesToRotation(Vec2 rotation, Vec3 vec) {
-        float f = Mth.cos((double) ((rotation.y + 90.0F) * 0.017453292F));
-        float g = Mth.sin((double) ((rotation.y + 90.0F) * 0.017453292F));
-        float h = Mth.cos((double) (-rotation.x * 0.017453292F));
-        float i = Mth.sin((double) (-rotation.x * 0.017453292F));
-        float j = Mth.cos((double) ((-rotation.x + 90.0F) * 0.017453292F));
-        float k = Mth.sin((double) ((-rotation.x + 90.0F) * 0.017453292F));
-        Vec3 v = new Vec3((double) (f * h), (double) i, (double) (g * h));
-        Vec3 w = new Vec3((double) (f * j), (double) k, (double) (g * j));
-        Vec3 u = v.cross(w).scale(-1.0);
-        double d = v.x * vec.z + w.x * vec.y + u.x * vec.x;
-        double e = v.y * vec.z + w.y * vec.y + u.y * vec.x;
-        double m = v.z * vec.z + w.z * vec.y + u.z * vec.x;
-        return new Vec3(d, e, m);
-    }
-
-    public Vec3 addLocalCoordinates(Vec3 local) {
-        return applyLocalCoordinatesToRotation(this.rotation(), local);
     }
 
     public boolean isFinite() {

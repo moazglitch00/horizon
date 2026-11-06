@@ -57,18 +57,18 @@ exercised by a mod, so its fidelity is unproven.
 | fabric-screen-api-v1 | PLANNED | |
 | fabric-biome-api-v1 | PLANNED | |
 
-## Minecraft Java API — 63 shims
+## Minecraft Java API — 65 shims
 
 All rows are **SHIM** unless noted: they compile with `javac --release 21` into
 the host and have a smoke check, but no mod has loaded them. The T-202 audit
 measured depth: **25 REAL, 18 PARTIAL, 4 SHELL, 3 blocker-level fakes**.
 T-214 removed the silent fakes.
 
-**Naming:** since 26.1 the game ships unobfuscated (`26.1.2.jar` has zero
+**Naming:** since 26.1 the game ships unobfuscated (`26.3.jar` has zero
 `class_*` entries), so 26.x mods reference these official names directly.
 Intermediary remapping only applies to ≤1.21 mods (T-230, deferred).
 
-**Path conformance (measured against `26.1.2.jar`):** **63/63**. T-240 renamed
+**Path conformance (measured against `26.3.jar`):** **65/65**. T-240 renamed
 the 8 Yarn/older paths (`client.MinecraftClient`→`client.Minecraft`,
 `util.Identifier`+`resources.ResourceLocation`→`resources.Identifier`,
 `world.entity.player.PlayerEntity`→`...Player`,
@@ -76,19 +76,22 @@ the 8 Yarn/older paths (`client.MinecraftClient`→`client.Minecraft`,
 `world.level.ServerWorld`→`server.level.ServerLevel`,
 `attributes.Attribute`→`world.entity.ai.attributes.Attribute`; `network.chat.Text`
 was deleted). T-241 added the RNG cluster (`RandomSource`,
-`world.level.levelgen.*`) and the hit-test cluster (`AABB`, `HitResult`,
-`BlockHitResult`). `shim_paths_match_the_verified_26x_set` guards the set.
+`world.level.levelgen.*`), the hit-test cluster (`AABB`, `HitResult`,
+`BlockHitResult`) and the formatting pair (`ChatFormatting`,
+`network.chat.TextColor`). `shim_paths_match_the_verified_26x_set` guards the set.
 
-**Member conformance (measured with `tools/fabric_shim_coverage.py`):**
-**16.8%** of public/protected methods (620/3685) and **10.4%** of fields (67/646).
+**Member conformance (measured with `tools/fabric_shim_coverage.py` against
+`26.3.jar`):**
+**16.6%** of public/protected methods (624/3758) and **20.8%** of fields (105/504).
 This, not the path count, is the linking gap: mods call members, and a missing
 one is `NoSuchMethodError`.
 
-**Differential parity (measured with `tools/fabric_shim_parity.py`):** the
-fixture runs the same source against the real `26.1.2.jar` and against the
-shims; **5,849/5,849 values are bit-identical** for `Mth`, `Vec2`, `Vec3`,
-`Vec3i`, `BlockPos`, `ChunkPos`, `Identifier`, `Direction`, `Rotation`,
-`AABB`, `HitResult`, `BlockHitResult` and the
+**Differential parity (measured with `tools/fabric_shim_parity.py` against
+`26.3.jar`):** the fixture runs the same source against the real `26.3.jar` and
+against the shims; **5,777/5,777 values are bit-identical** for `Mth`, `Vec2`,
+`Vec3`, `Vec3i`, `BlockPos`, `ChunkPos`, `Identifier`, `Direction`, `Rotation`,
+`AABB`, `HitResult`, `BlockHitResult`, the
+formatting pair (`ChatFormatting`, `TextColor`), and the
 RNG cluster (`RandomSource`, `BitRandomSource`, `LegacyRandomSource`,
 `SingleThreadedRandomSource`, `ThreadSafeLegacyRandomSource`,
 `MarsagliaPolarGaussian`, `PositionalRandomFactory`, `RandomSupport`). This
@@ -96,12 +99,17 @@ proves *those members* behave like vanilla; it does not prove the other ~83%
 of members exist or behave. The oracle caught one vanilla quirk worth
 naming: `RandomSource.triangle` multiplies the random difference by `max`,
 not by `max - min`; the Iterable clip path also translates block-local shapes
-by the `BlockPos` before testing them.
+by the `BlockPos` before testing them. `ChatFormatting.getById(-1)` returns
+`RESET` (vanilla's id map is last-write-wins); hex `TextColor`s store no
+name, so their `hashCode` is `31 * value + 961` while named colours keep the
+name in it (`equals` ignores the name in both paths) — vanilla's own quirk,
+reproduced, not "fixed".
 
 | Package | Classes |
 |---|---|
-| `net.minecraft` | `IdentifierException` |
+| `net.minecraft` | `IdentifierException`, `ChatFormatting` |
 | `net.minecraft.util` | `Mth`, `RandomSource` |
+| `net.minecraft.network.chat` | `Component`, `TextColor` |
 | `net.minecraft.world.level.levelgen` | `BitRandomSource`, `LegacyRandomSource`, `SingleThreadedRandomSource`, `ThreadSafeLegacyRandomSource`, `MarsagliaPolarGaussian`, `PositionalRandomFactory`, `RandomSupport` |
 | `net.minecraft.resources` | `Identifier` |
 | `net.minecraft.core` | `BlockPos`, `Direction`, `Position`, `Registry`, `Vec3i`, `particles.ParticleType`, `particles.SimpleParticleType` |
@@ -125,7 +133,6 @@ by the `BlockPos` before testing them.
 | `net.minecraft.world.damagesource` | `DamageSource` |
 | `net.minecraft.world.effect` | `MobEffect` |
 | `net.minecraft.network` | `FriendlyByteBuf` |
-| `net.minecraft.network.chat` | `Component` |
 | `net.minecraft.network.protocol` | `Packet` |
 | `net.minecraft.network.syncher` | `EntityDataAccessor` |
 | `net.minecraft.server` | `MinecraftServer` |
@@ -175,7 +182,8 @@ by mistake.)
 No real Java mod has been executed. `fabric-api-0.127.1+1.21.5.jar` is present in
 the test `mods/` folder and is *readable* by intake, but it targets 1.21.5 and its
 classes use intermediary names, so they are not usable against our official-named
-shims.
+shims. A `0.165.2+26.3` Fabric API jar is on disk (sha1 verified) and available
+for the next compatibility pass.
 
 | Mod | Intake | Execution |
 |---|---|---|

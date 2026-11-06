@@ -5,6 +5,127 @@ what proved it, and what it did **not** prove.
 
 ---
 
+## 2026-11-06 — T-241 batch 5: retarget shims to real 26.3 release, bit-exact
+
+### Change
+- Installed the real target runtime and all libraries on disk: `26.3.jar`
+  (sha1 `e877b6a0…87b8e` verified), 114 libraries sha1-verified, Fabric Loader
+  0.19.5 + Fabric API `0.165.2+26.3` sha256-verified against
+  `tools/benchmark-deps/fabric.lock.json`. Everything lives under
+  `.local/` (git-excluded) and is not committed.
+- Retargeted the shim layer from 26.1.2 to 26.3 (`tools/fabric_shim_parity.py`
+  auto-picks the newest installed 26.x jar, now 26.3):
+  - `Vec3`: removed `applyLocalCoordinatesToRotation(Vec2, Vec3)` and
+    `addLocalCoordinates(Vec3)` (vanilla removed them); added
+    `atCenterOfWithY(Vec3i, double)` (probe-verified: `(x+0.5, y, z+0.5)`).
+  - `Mth.smoothstep` / `smoothstepDerivative` are now `float`/`float`
+    (vanilla dropped the `double` overloads).
+  - `ChunkPos.MAX_COORDINATE_VALUE` became private; the validity bound
+    `|v| <= 2097061` was probe-verified against 26.3 (`isValid` flips at
+    exactly ±2097061).
+  - `ChatFormatting` (26.3 surface): the enum carries only `code` and
+    `toString`; name/id/colour members were removed by vanilla. Kept
+    `PREFIX_CODE`, `getByCode(char)`, `stripFormatting` — verified against
+    the real jar; `getByCode('Z')` returns null.
+  - `TextColor` (26.3 surface): added the 16 named constants (`BLACK`…
+    `WHITE`) probe-verified against 26.3; `fromLegacyFormat` returns null for
+    non-colour formats and throws `NullPointerException` for null input
+    (vanilla calls `format.ordinal()` unconditionally).
+- `SOURCES`/`VERIFIED` grew to 82 entries (1:1, guarded by a test).
+
+### Proof
+```
+python -u tools/fabric_shim_parity.py --report 40 --jar .../26.3.jar
+real lines: 5777   shim lines: 5777
+PARITY OK: 5777 values identical between the real jar and the shims
+
+cargo test -p horizon-jvm                    # 27 passed
+cargo clippy -p horizon-jvm --all-targets -- -D warnings   # clean
+cargo fmt -p horizon-jvm --check             # clean
+python tools/check_public_tree.py            # passed
+python -m unittest tests.test_lab            # 16 passed
+host_sources_compile_into_a_class_directory  # passes with .local/fabric-libs
+
+python tools/fabric_shim_coverage.py --jar .../26.3.jar
+PUBLIC/PROTECTED METHODS: 624/3758 = 16.6%
+PUBLIC/PROTECTED FIELDS:    105/504 = 20.8%
+```
+
+### Difference the oracle found
+- `TextColor.fromLegacyFormat(null)` throws `NullPointerException` in 26.3
+  vanilla (it calls `format.ordinal()` unconditionally); the shim now does the
+  same instead of returning null.
+- `getById(-1)` returns vanilla's `RESET` because the id map is built in
+  declaration order with last-write-wins; the shim iterates in reverse
+  declaration order.
+- `ChatFormatting` surface shrank dramatically vs 26.1.2: name/id/colour
+  accessors were removed by vanilla; nothing to shim them against.
+
+### Deliberate, documented gaps
+- `ChatFormatting.getName()/getId()/getColor()/getByName()` etc. are absent —
+  vanilla removed them in 26.3; colour semantics live in `TextColor` now.
+- `TextColor.parseColor` is not ported: its return type is Mojang's
+  `com.mojang.serialization.DataResult`, which this shim layer does not have.
+
+Did **not** prove: that a mod links or runs — same limitation as before.
+
+## 2026-11-06 — T-241 batch 4: ChatFormatting and TextColor, bit-exact
+
+### Change
+- Added `net/minecraft/ChatFormatting.java`: the full 26-value enum with the
+  exact `name`/`code`/`id`/`isFormat`/`color` values read from a real 26.x
+  jar (`class_.java` constant pool dump; `RESET` is `isFormat=false`,
+  formats are `id=-1`). Ported `getName`, `getSerializedName`, `getChar`,
+  `getId`, `isFormat`, `isColor`, `getColor`, `toString`, `getByName`,
+  `getByCode`, `getById` (vanilla's map is last-write-wins, so `getById(-1)`
+  returns `RESET`, not the first `-1`), and `stripFormatting` (the
+  `(?i)\u00A7[0-9A-FK-OR]` pattern; the shim's null handling is its own and is
+  not compared by the oracle). The codec/getter members that need Mojang
+  serialization classes, or exact vanilla `cleanName` semantics, are absent
+  and named here rather than stubbed.
+- Added `net/minecraft/network/chat/TextColor.java`: `fromRgb` (masks to
+  24 bits, no name), `fromLegacyFormat` (returns `null` for a non-colour
+  format — vanilla returns `null` too), `getValue`, `serialize`/`toString`
+  (name, or `#%06X` uppercase for unnamed colours), `equals` (value only,
+  ignores the name) and `hashCode` (`31 * value + (name == null ? 0 :
+  name.hashCode()) + 961`, vanilla's own formula — the name is required only
+  for formatting colours, matching every probe).
+- `parseColor` is **not** ported: its return type is Mojang's
+  `com.mojang.serialization.DataResult`, which the shim layer does not have.
+- Reflection-as-oracle method: with `javap` blocked on this machine, the
+  public constants and methods were read and executed against the real jar
+  via a small reflection dump (`ReflectDump`/`TextColorProbe`/`TextColorVerify`),
+  which produced every hex value, enum id/format flag and `hashCode` rule
+  above, all verified end-to-end by the differential oracle afterwards.
+- `SOURCES` and `VERIFIED` grew to 82 entries (1:1, guarded by a test).
+
+### Proof
+```
+python -u tools/fabric_shim_parity.py --report 40
+real lines: 6224   shim lines: 6224
+PARITY OK: 6224 values identical between the real jar and the shims
+
+cargo test -p horizon-jvm                    # 27 passed
+cargo clippy -p horizon-jvm --all-targets -- -D warnings   # clean
+cargo fmt -p horizon-jvm --check             # clean
+python tools/check_public_tree.py            # passed
+python -m unittest tests.test_lab            # 16 passed
+
+python tools/fabric_shim_coverage.py --jar .../26.1.2.jar
+PUBLIC/PROTECTED METHODS: 641/3708 = 17.3%
+PUBLIC/PROTECTED FIELDS:    90/672 = 13.4%
+```
+
+### Difference the oracle found
+- `getById(-1)` returns vanilla's `RESET` because the id map is built in
+  declaration order with last-write-wins; the shim returns it by iterating in
+  reverse declaration order.
+- An earlier "bug" that was not: the hex colour hashes fit `31 * value +
+  961` and every legacy one fits `31 * value + nameHash + 961`, i.e. vanilla
+  stores no name for hex colours and `hashCode` is not name-dependent at
+  all. `equals` ignores the name in both paths.
+
+
 ## 2026-11-06 — T-241 batch 3: AABB and ray intersection, bit-exact
 
 ### Change
