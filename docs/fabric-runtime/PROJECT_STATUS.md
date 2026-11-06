@@ -1,15 +1,17 @@
 # Fabric Runtime: Project Status
 
-**As of 2026-11-04.** Every number below is measured from the working tree, not
+**As of 2026-11-06.** Every number below is measured from the working tree, not
 estimated. Commands used are listed at the bottom.
 
 ## One-line status
 
 Jar intake, Fabric Loader discovery, the Rust↔JVM pipe, the registry snapshot,
-a 47-class `net.minecraft` shim layer and **entrypoint invocation for our own
-fixture mods** exist and are tested. **A real Java mod still does not run**:
-8 shims use names absent from a 26.x jar, Mixin is absent, and Fabric API event
-dispatch is not implemented.
+a 52-class `net.minecraft` shim layer (all at real 26.x paths) and **entrypoint
+invocation for our own fixture mods** exist and are tested. The core value
+classes (`Mth`, `Vec2`, `Vec3`, `Vec3i`, `BlockPos`, `ChunkPos`, `Identifier`,
+`Direction`, `Rotation`) are **bit-exact against a real `26.1.2.jar`** (5,083/5,083
+values). **A real Java mod still does not run**: only 13.7% of public members
+exist, Mixin is absent, and Fabric API event dispatch is not implemented.
 
 ## Phase table
 
@@ -17,7 +19,7 @@ dispatch is not implemented.
 |---|---|---|---|
 | 0 | Jar intake + dependency resolution | **Working** | `horizon-fabric` reads pinned jars, resolves deps, `horizon-fabric check` reports 58 mods / 49 ordered / 0 errors |
 | 1 | JVM integration (child process + wire) | **Working** | `cargo test -p horizon-jvm` → 10 host tests; `load_class` + `invoke_method` + `invoke_entrypoint` round-trips pass |
-| 2 | `net.minecraft.*` compatibility classes | **In progress, unverified** | 45 classes, all at real 26.x paths; 3.6% of public members declared; 0 loaded by a real mod |
+| 2 | `net.minecraft.*` compatibility classes | **In progress, unverified by a mod** | 52 classes, all at real 26.x paths; 13.7% of public members declared; core value classes bit-exact vs `26.1.2.jar`; 0 loaded by a real mod |
 | 3 | Registry bridge | **Partial** | 103-byte `registry-snapshot` received by the host; Java side stores nothing yet |
 | 4 | Fabric API | **Started, wrong signatures** | 8 types; T-201 against the real jar: 4 MISMATCH, 4 ABSENT; no listener has been fired |
 | 5 | Mixin engine | **Not started** | 0 transformations; sponge-mixin 0.17.4 + ASM 9.10.1 are pinned in `fabric.lock.json` but not on this machine |
@@ -42,6 +44,11 @@ dispatch is not implemented.
    "main", id)` loads the class out of its own jar, instantiates it and calls
    `ModInitializer.onInitialize()`, with the loader cached per jar so static
    state persists. Verified for our own fixture only.
+7. **The core shims are a bit-exact port, not a guess**:
+   `tools/fabric_shim_parity.py` compiles one fixture against the real
+   `26.1.2.jar` and runs it against both the real classes and the shims; all
+   5,083 printed values match bit-for-bit for `Mth`, `Vec2`, `Vec3`, `Vec3i`,
+   `BlockPos`, `ChunkPos`, `Identifier`, `Direction` and `Rotation`.
 
 ## What does not run today
 
@@ -58,30 +65,32 @@ dispatch is not implemented.
 - Real mod jars at runtime — `fabric-api-0.127.1+1.21.5.jar` is read but targets
   1.21.5, not 26.3, so its classes are not usable as-is.
 
-## Measured inventory (2026-11-04)
+## Measured inventory (2026-11-06)
 
 | Item | Count |
 |---|---|
-| Java files in `java/horizon-host/src` | 62 |
-| `net.minecraft.*` shims | 45 (all paths verified against `26.1.2.jar`) |
+| Java files in `java/horizon-host/src` | 69 |
+| `net.minecraft.*` shims | 52 (all paths verified against `26.1.2.jar`) |
 | `net.fabricmc.*` shims (API + entrypoint interfaces) | 11 |
 | Host runtime files (`horizon/host/*`) | 6 |
-| Sources embedded via `SOURCES` in `host.rs` | 62 (1:1 with files on disk, guarded by a test) |
+| Sources embedded via `SOURCES` in `host.rs` | 69 (1:1 with files on disk, guarded by a test) |
 | `horizon-jvm` tests passing | 27 (6 unit, 10 host, 10 protocol, 1 registry dump) |
-| Public/protected members declared vs a real 26.x jar | **3.6% methods, 1.5% fields** (`tools/fabric_shim_coverage.py`) |
+| Differential parity values | **5,083/5,083 bit-identical** vs `26.1.2.jar` (`tools/fabric_shim_parity.py`) |
+| Public/protected members declared vs a real 26.x jar | **13.7% methods (487/3558), 8.5% fields (54/633)** (`tools/fabric_shim_coverage.py`) |
 
 ## Honest completion estimate
 
-- Breadth of the `net.minecraft` shim layer: **3.6% of public/protected methods
-  and 1.5% of fields** of the same classes in a real 26.x jar (measured with
+- Breadth of the `net.minecraft` shim layer: **13.7% of public/protected methods
+  and 8.5% of fields** of the same classes in a real 26.x jar (measured with
   `tools/fabric_shim_coverage.py`), and **0% verified** against a real mod. Path
-  names are right (45/45); members are not.
+  names are right (52/52); members are mostly not. The 13.7% that exist for the
+  core value classes were proven bit-exact by `tools/fabric_shim_parity.py`.
   T-202 measured depth: 25 REAL, 18 PARTIAL, 4 SHELL, 3 blocker-level fakes.
   T-214 removed every silent blocker fake (they are now real or throw a named
   `UnsupportedOperationException`), exercised by `shim_behaviour_is_not_silent`.
 - Fabric API: **~5%**. All 8 existing types need signature work; dispatch is 0%.
-- Whole Java-mod programme: **~9%**. Member conformance (T-241), Mixin (Phase 5)
-  and the gameplay bridge (Phase 6) are the largest phases.
+- Whole Java-mod programme: **~13%**. Member conformance (T-241, now 13.7%),
+  Mixin (Phase 5) and the gameplay bridge (Phase 6) are the largest phases.
 - Do not read the class count as progress toward "mods work". A shim that has
   never been loaded by a mod is untested, not done.
 
@@ -125,8 +134,8 @@ fields are declared (measured with `tools/fabric_shim_coverage.py`).
 1. **No Minecraft Java 26.3 runtime on this machine**
    (`%APPDATA%\.minecraft\versions` stops at 26.1 snapshots). Mixin targets and
    gameplay bridging need the real 26.3 class files.
-2. **Shim members do not match 26.x.** All 45 paths now exist in a real jar
-   (T-240), but only **3.6%** of public/protected methods and **1.5%** of fields
+2. **Shim members do not match 26.x.** All 52 paths now exist in a real jar
+   (T-240), but only **13.7%** of public/protected methods and **8.5%** of fields
    are declared. A real mod will hit `NoSuchMethodError` on almost any vanilla
    call. T-241 is the fix. (Intermediary remapping is only needed for ≤1.21
    mods — since 26.1 the game ships named classes, so 26.x mods use official
@@ -141,8 +150,9 @@ continues; blocked work is recorded, not skipped.
 ## How the numbers were produced
 
 ```sh
-Get-ChildItem java\horizon-host\src -Recurse -Filter *.java          # 62
-Select-String -Path crates\horizon-jvm\src\host.rs -Pattern '"(net|horizon)/.*\.java"'  # 62
+Get-ChildItem java\horizon-host\src -Recurse -Filter *.java          # 69
+Select-String -Path crates\horizon-jvm\src\host.rs -Pattern '"(net|horizon)/.*\.java"'  # 69
 cargo test -p horizon-jvm                                            # 27 passing
-python tools\fabric_shim_coverage.py --jar <26.x.jar> --jdk <jdk>    # 3.6% / 1.5%
+python tools\fabric_shim_parity.py                                   # 5083/5083 identical
+python tools\fabric_shim_coverage.py --jar <26.x.jar>                # 13.7% / 8.5%
 ```

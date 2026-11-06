@@ -56,6 +56,10 @@ pub const SOURCES: &[(&str, &str)] = &[
         include_str!("../../../java/horizon-host/src/net/minecraft/resources/Identifier.java"),
     ),
     (
+        "net/minecraft/IdentifierException.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/IdentifierException.java"),
+    ),
+    (
         "net/minecraft/core/Registry.java",
         include_str!("../../../java/horizon-host/src/net/minecraft/core/Registry.java"),
     ),
@@ -188,6 +192,10 @@ pub const SOURCES: &[(&str, &str)] = &[
         include_str!("../../../java/horizon-host/src/net/minecraft/sounds/SoundEvent.java"),
     ),
     (
+        "net/minecraft/util/Mth.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/util/Mth.java"),
+    ),
+    (
         "net/minecraft/world/effect/MobEffect.java",
         include_str!("../../../java/horizon-host/src/net/minecraft/world/effect/MobEffect.java"),
     ),
@@ -266,8 +274,30 @@ pub const SOURCES: &[(&str, &str)] = &[
         include_str!("../../../java/horizon-host/src/net/minecraft/core/BlockPos.java"),
     ),
     (
+        "net/minecraft/core/Vec3i.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/core/Vec3i.java"),
+    ),
+    (
+        "net/minecraft/core/Direction.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/core/Direction.java"),
+    ),
+    (
+        "net/minecraft/core/Position.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/core/Position.java"),
+    ),
+    (
         "net/minecraft/world/phys/Vec3.java",
         include_str!("../../../java/horizon-host/src/net/minecraft/world/phys/Vec3.java"),
+    ),
+    (
+        "net/minecraft/world/phys/Vec2.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/phys/Vec2.java"),
+    ),
+    (
+        "net/minecraft/world/level/block/Rotation.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/block/Rotation.java"
+        ),
     ),
     (
         "net/minecraft/core/particles/SimpleParticleType.java",

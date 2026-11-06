@@ -5,6 +5,65 @@ what proved it, and what it did **not** prove.
 
 ---
 
+## 2026-11-06 — T-241 batch 1: bit-exact parity for the core value classes
+
+### Change
+- Added `tools/fabric_shim_parity.py`: a differential oracle. It compiles the
+  shims (`javac --release 21`) and one fixture against the real `26.1.2.jar`
+  (JDK 25), then runs the fixture twice — once on the real classes, once with
+  the shim class directory first on the classpath — and diffs stdout
+  **bit-for-bit**. Flags: `--jar`, `--jdk`, `--shim-jdk`, `--report N`, `--keep`.
+- Added `crates/horizon-jvm/tests/fixtures/ShimParity.java`: 5,083 values across
+  `Mth`, `Vec2`, `Vec3`, `Vec3i`, `BlockPos`, `ChunkPos`, `Identifier`,
+  `Direction` and `Rotation`. Floats/doubles are printed as raw bits, and the
+  fixture writes only through a stdout `PrintStream` captured **before**
+  Bootstrap swaps `System.out`, so log4j timestamps cannot mask a difference.
+- Rewrote/grew against real bytecode: `net/minecraft/core/{Vec3i,BlockPos,
+  Direction}.java`, `net/minecraft/world/{level/ChunkPos,level/block/Rotation,
+  phys/Vec2,phys/Vec3}.java`, `net/minecraft/resources/Identifier.java`,
+  `net/minecraft/IdentifierException.java` (new).
+- `SOURCES` and the `VERIFIED` path list now include `IdentifierException`
+  (69 entries, still 1:1 with the files on disk).
+
+### Proof
+```
+python -u tools/fabric_shim_parity.py --report 20
+real lines: 5083   shim lines: 5083
+PARITY OK: 5083 values identical between the real jar and the shims
+
+cargo test -p horizon-jvm
+test result: ok. 6 passed   (unit)
+test result: ok. 10 passed  (tests/host.rs)
+test result: ok. 10 passed  (tests/protocol.rs)
+test result: ok. 1 passed   (registry dump)          # 27 total, 0 failed
+cargo clippy -p horizon-jvm --all-targets -- -D warnings   # clean
+
+python tools/fabric_shim_coverage.py --jar .../26.1.2.jar
+PUBLIC/PROTECTED METHODS: 487/3558 = 13.7%
+PUBLIC/PROTECTED FIELDS:    54/633 = 8.5%
+```
+
+Differences the oracle found and fixed (each read from `javap` bytecode, not
+guessed):
+- `Vec3i.toString()` is `BlockPos{x=…, y=…, z=…}` (Guava
+  `MoreObjects.toStringHelper(this)`), not `[x, y, z]`.
+- `Vec3.toString()` uses parentheses; `directionFromRotation(Vec2)` passes
+  `rotation.x` then `rotation.y`.
+- `Rotation.CLOCKWISE_180.getSerializedName()` is `"180"`.
+- `Direction`: 2D data values are SOUTH=0, WEST=1, NORTH=2, EAST=3; `BY_2D_DATA`
+  follows that order; `getClockWise`/`getCounterClockWise` map WEST↔NORTH and
+  EAST↔SOUTH; `AxisDirection` names are `Towards positive`/`Towards negative`.
+- `Identifier`: `bySeparator` validates and throws `IdentifierException`;
+  `tryParse` delegates to `tryBySeparator`; `isValidPath("")` and
+  `isValidNamespace("")` are **true**, `isValidNamespace("..")` is false;
+  `hashCode = 31 * namespace.hashCode() + path.hashCode()`;
+  `toShortString()` drops the `minecraft` namespace; `resolveAgainst` appends
+  no `.json`.
+
+Did **not** prove: that a mod links or runs. The fixture may only call members
+that already exist in the real jar; a real mod also needs the other ~86% of
+members, Fabric API, Mixin and the gameplay bridge.
+
 ## 2026-11-05 — T-240: all 45 shim paths match a real 26.x jar
 
 ### Change

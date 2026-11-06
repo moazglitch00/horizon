@@ -9,6 +9,11 @@ import sys
 PRIVATE_ROOTS = {".local", "decompiled", "minecraft", "assets", "run", "logs"}
 PRIVATE_EXTENSIONS = {".jar", ".class", ".jfr", ".hprof", ".java"}
 ORIGINAL_JDK_TOOLS = {"tools/JfrSummary.java", "tests/java/JfrFixture.java"}
+# Handwritten Horizon Java (the JVM host, its net.minecraft/Fabric API compatibility shims and
+# the fixtures that test them). These are original sources, never decompiled game code; the
+# `.java` rule above exists to keep Mojang's recovered sources out, not these. Any decompiled
+# Minecraft tree still lands under `decompiled/`, `minecraft/` or `.local/`, which stay rejected.
+ORIGINAL_JAVA_PREFIXES = ("java/horizon-host/src/", "crates/horizon-jvm/tests/fixtures/")
 
 
 def prohibited(path):
@@ -19,6 +24,9 @@ def prohibited(path):
     # Original Horizon mod sources may also be tracked.
     if parsed.suffix == ".java" and path.startswith(("mods/horizon/src/", "mods/horizon-lab/src/")):
         return not ("/dev/horizonlab/" in path)
+    # Handwritten host/shims/fixtures: allowed as long as they are not in a private root.
+    if parsed.suffix == ".java" and path.startswith(ORIGINAL_JAVA_PREFIXES):
+        return bool(parsed.parts and parsed.parts[0] in PRIVATE_ROOTS)
     return bool(parsed.parts and parsed.parts[0] in PRIVATE_ROOTS) or parsed.suffix.lower() in PRIVATE_EXTENSIONS
 
 

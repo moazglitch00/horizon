@@ -1,6 +1,6 @@
 # Fabric Runtime: Agent Status
 
-**As of 2026-11-04.** Agents are OpenCode subagents (`.opencode/agents/*.md`).
+**As of 2026-11-06.** Agents are OpenCode subagents (`.opencode/agents/*.md`).
 A row is only `idle` when a task is finished *and verified*; otherwise it says
 what it is doing.
 
@@ -59,7 +59,7 @@ edited only by the project-manager.
 | Task | Agent | Model | Files owned |
 |---|---|---|---|
 | T-240 rename 8 shims to real 26.x paths | java-specialist + PM | deepseek-v4.1-flash-free | **done** — 45/45 paths verified in `26.1.2.jar`; `shim_paths_match_the_verified_26x_set` |
-| T-241 grow public/protected member conformance | java-specialist + PM | deepseek-v4.1-flash-free | measured by `tools/fabric_shim_coverage.py`; 3.6% methods / 1.5% fields at start |
+| T-241 grow public/protected member conformance | java-specialist + PM | deepseek-v4.1-flash-free | **in progress** — batch 1 (core value classes) proven bit-exact by `tools/fabric_shim_parity.py` (5083/5083); coverage now **13.7%** methods / **8.5%** fields. Next: `AABB`, `RandomSource`, `Component`/`Style`, `BlockState`/`BlockEntity` |
 
 ## Retry policy
 

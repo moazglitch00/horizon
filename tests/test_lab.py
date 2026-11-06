@@ -181,6 +181,16 @@ class PublicationTests(unittest.TestCase):
             self.assertFalse(check_public_tree.prohibited(path), path)
         for path in ["tools/Minecraft.java", "tests/java/Client.java", ".local/tools/JfrSummary.java"]:
             self.assertTrue(check_public_tree.prohibited(path), path)
+        # Handwritten Horizon host sources and fixtures are original, not recovered game code.
+        for path in ["java/horizon-host/src/horizon/host/Main.java",
+                     "java/horizon-host/src/net/minecraft/core/BlockPos.java",
+                     "crates/horizon-jvm/tests/fixtures/ShimParity.java"]:
+            self.assertFalse(check_public_tree.prohibited(path), path)
+        # Inside an allowed prefix, artifacts and private roots are still rejected.
+        for path in ["java/horizon-host/src/net/minecraft/core/Foo.class",
+                     "java/horizon-host/src/net/minecraft/core/game.jar",
+                     ".local/java/horizon-host/src/net/minecraft/core/Foo.java"]:
+            self.assertTrue(check_public_tree.prohibited(path), path)
 
     def test_force_added_ignored_file_is_detected_in_index_and_history(self):
         with tempfile.TemporaryDirectory() as temp:

@@ -1,6 +1,6 @@
 # Fabric Runtime: Compatibility Matrix
 
-**Verified 2026-11-04** against the working tree. See `PROJECT_STATUS.md` for
+**Verified 2026-11-06** against the working tree. See `PROJECT_STATUS.md` for
 the numbers this file is built on.
 
 ## Status legend
@@ -57,7 +57,7 @@ exercised by a mod, so its fidelity is unproven.
 | fabric-screen-api-v1 | PLANNED | |
 | fabric-biome-api-v1 | PLANNED | |
 
-## Minecraft Java API — 45 shims
+## Minecraft Java API — 52 shims
 
 All rows are **SHIM** unless noted: they compile with `javac --release 21` into
 the host and have a smoke check, but no mod has loaded them. The T-202 audit
@@ -68,7 +68,7 @@ T-214 removed the silent fakes.
 `class_*` entries), so 26.x mods reference these official names directly.
 Intermediary remapping only applies to ≤1.21 mods (T-230, deferred).
 
-**Path conformance (measured against `26.1.2.jar`):** **45/45**. T-240 renamed
+**Path conformance (measured against `26.1.2.jar`):** **52/52**. T-240 renamed
 the 8 Yarn/older paths (`client.MinecraftClient`→`client.Minecraft`,
 `util.Identifier`+`resources.ResourceLocation`→`resources.Identifier`,
 `world.entity.player.PlayerEntity`→`...Player`,
@@ -78,42 +78,51 @@ the 8 Yarn/older paths (`client.MinecraftClient`→`client.Minecraft`,
 was deleted). `shim_paths_match_the_verified_26x_set` guards the set.
 
 **Member conformance (measured with `tools/fabric_shim_coverage.py`):**
-**3.6%** of public/protected methods (120/3338) and **1.5%** of fields (9/589).
+**13.7%** of public/protected methods (487/3558) and **8.5%** of fields (54/633).
 This, not the path count, is the linking gap: mods call members, and a missing
 one is `NoSuchMethodError`.
 
+**Differential parity (measured with `tools/fabric_shim_parity.py`):** the
+fixture runs the same source against the real `26.1.2.jar` and against the
+shims; **5,083/5,083 values are bit-identical** for `Mth`, `Vec2`, `Vec3`,
+`Vec3i`, `BlockPos`, `ChunkPos`, `Identifier`, `Direction` and `Rotation`. This
+proves *those members* behave like vanilla; it does not prove the other 86% of
+members exist or behave.
+
 | Package | Classes |
 |---|---|
-| `net.minecraft.util` | `Identifier` |
-| `net.minecraft.resources` | `ResourceLocation` |
-| `net.minecraft.core` | `Registry`, `BlockPos`, `particles.ParticleType`, `particles.SimpleParticleType` |
-| `net.minecraft.attributes` | `Attribute` |
+| `net.minecraft` | `IdentifierException` |
+| `net.minecraft.util` | `Mth` |
+| `net.minecraft.resources` | `Identifier` |
+| `net.minecraft.core` | `BlockPos`, `Direction`, `Position`, `Registry`, `Vec3i`, `particles.ParticleType`, `particles.SimpleParticleType` |
 | `net.minecraft.sounds` | `SoundEvent` |
 | `net.minecraft.world.item` | `Item`, `ItemStack`, `CreativeModeTab` |
 | `net.minecraft.world.item.crafting` | `Recipe`, `RecipeManager` |
 | `net.minecraft.world.item.enchantment` | `Enchantment` |
-| `net.minecraft.world.level` | `Level`, `ClientWorld`, `ServerWorld`, `ChunkPos` |
-| `net.minecraft.world.level.block` | `Block` |
+| `net.minecraft.world.level` | `Level`, `ChunkPos` |
+| `net.minecraft.world.level.block` | `Block`, `Rotation` |
 | `net.minecraft.world.level.block.state` | `BlockState` |
 | `net.minecraft.world.level.block.entity` | `BlockEntity`, `BlockEntityType` |
 | `net.minecraft.world.level.chunk` | `ChunkAccess`, `LevelChunk` |
 | `net.minecraft.world.level.storage.loot` | `LootTable`, `LootContext` |
 | `net.minecraft.world.entity` | `Entity`, `EntityType`, `LivingEntity`, `Mob` |
-| `net.minecraft.world.entity.player` | `PlayerEntity` |
+| `net.minecraft.world.entity.player` | `Player` |
 | `net.minecraft.world.entity.ai.goal` | `Goal` |
-| `net.minecraft.world.entity.ai.attributes` | `AttributeSupplier` |
-| `net.minecraft.world.phys` | `Vec3` |
+| `net.minecraft.world.entity.ai.attributes` | `Attribute`, `AttributeSupplier` |
+| `net.minecraft.world.phys` | `Vec2`, `Vec3` |
 | `net.minecraft.world.inventory` | `AbstractContainerMenu` |
 | `net.minecraft.world` | `Container` |
 | `net.minecraft.world.damagesource` | `DamageSource` |
 | `net.minecraft.world.effect` | `MobEffect` |
 | `net.minecraft.network` | `FriendlyByteBuf` |
-| `net.minecraft.network.chat` | `Component`, `Text` |
+| `net.minecraft.network.chat` | `Component` |
 | `net.minecraft.network.protocol` | `Packet` |
 | `net.minecraft.network.syncher` | `EntityDataAccessor` |
 | `net.minecraft.server` | `MinecraftServer` |
-| `net.minecraft.client` | `MinecraftClient` |
+| `net.minecraft.server.level` | `ServerLevel` |
+| `net.minecraft.client` | `Minecraft` |
 | `net.minecraft.client.gui.screens` | `Screen` |
+| `net.minecraft.client.multiplayer` | `ClientLevel` |
 | `net.minecraft.commands` | `CommandSourceStack` |
 
 ### Not present (blocks real mods)
@@ -121,10 +130,11 @@ one is `NoSuchMethodError`.
 `BlockBehaviour`, `Item$Settings`, `Block$Settings`, `TagKey`, `Tags`,
 `BuiltInRegistries`, `Registries`, `Holder`, `HolderLookup`, `DataComponents`,
 `InteractionResult`, `BlockHitResult`, `AABB`, `BlockBox`, `EntityType$Builder`,
-`SpawnGroup`, `Structure`, `BiomeSource`, `ChunkGenerator`, `ServerLevel`
-(26.3 replaced `ServerWorld`?), `PacketByteBuf`, `CustomPayload`, `ResourceManager`,
-`ClientPlayerEntity`, `WorldRenderEvents` types. Each needs its real signature
-before implementation — this list is the queue, not a promise.
+`SpawnGroup`, `Structure`, `BiomeSource`, `ChunkGenerator`, `PacketByteBuf`,
+`CustomPayload`, `ResourceManager`, `ClientPlayerEntity`, `WorldRenderEvents`
+types. Each needs its real signature before implementation — this list is the
+queue, not a promise. (`ServerLevel` now exists as a shim; it was on this list
+by mistake.)
 
 ## Mixin
 
