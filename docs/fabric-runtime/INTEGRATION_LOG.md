@@ -5,6 +5,86 @@ what proved it, and what it did **not** prove.
 
 ---
 
+## 2026-11-06 — T-211/T-212/T-242: Fabric API event dispatch end-to-end; entrypoint runs through Fabric Loader
+
+### Change
+- `Event.java` rewritten as a **concrete class** (not abstract, not an interface)
+  holding a `List<T>` of listeners and returning a dynamic proxy `invoker()`
+  that dispatches to every listener in registration order (`register()` adds to
+  the list). `register(Identifier, T)` stores under the given phase; for now all
+  listeners fire in registration order regardless of phase. `addPhaseOrdering`
+  is a no-op placeholder.
+- `ServerLifecycleEvents`, `ClientLifecycleEvents`, `ClientTickEvents` rewritten
+  as **final classes** (not interfaces) with static `Event` fields whose type
+  parameters are functional interfaces with vanilla-style method names
+  (`onServerStarting`, `onClientStarted`, `onStartTick`, …). Real Fabric API
+  surface, not dummy interfaces.
+- Removed `net/fabricmc/api/{ModInitializer,ClientModInitializer,
+  DedicatedServerModInitializer}.java` from the shim layer: these classes now
+  come from Fabric Loader itself at runtime. `Entrypoints.java` resolves
+  `FabricLoaderImpl.INSTANCE`, `FabricLauncherBase.setLauncher()`,
+  `HorizonGameProvider` and `Event` purely reflectively so the host sources
+  compile without Fabric Loader on the classpath.
+- `Discovery.java` now calls `loader.load()` after discovery, fully
+  initialising Fabric Loader (classloaders, entrypoints) on the first call.
+- `HeadlessLauncher` initialises its `properties` field (needed by
+  `MixinBootstrap`).
+- Classpath ordering fixed: Fabric Loader jars come **before** host classes so
+  real `net.fabricmc.api.*` classes take precedence over any shim namesakes.
+
+### Proof
+```
+python -u tools/test_event_dispatch.py
+Compile exit code: 0
+Run exit code: 0
+STDOUT: Invoker class: jdk.proxy1.$Proxy0
+Server instance: MinecraftServer
+Invoking SERVER_STARTING event...
+Listener 1: SERVER_STARTING fired! count=1 server=MinecraftServer
+Listener 2: SERVER_STARTING fired! count=2 server=MinecraftServer
+Call count: 2
+SUCCESS: Both listeners fired in order!
+
+python -u tools/test_entrypoint.py
+Received frame tag=6
+Discovery report: ok=True, mods=5, order=['fabricloader', 'java', 'minecraft', 'mixinextras', 'testmod']
+Sent ENTRYPOINT
+ENTRYPOINT result: ok:main:testmod.TestModInitializer:testmod:loader-initialised
+testmod_ran.txt contents: TestMod onInitialize() ran!
+[17:57:54] [INFO] [FabricLoader/Mixin]: SpongePowered MIXIN Subsystem Version=0.8.7
+TestModInitializer STATIC INIT
+TestModInitializer CONSTRUCTOR
+TestMod onInitialize() RUNNING!
+TestMod onInitialize() DONE!
+
+cargo test -p horizon-jvm --test host
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+cargo test -p horizon-jvm --lib
+test result: ok. 6 passed
+cargo clippy -p horizon-jvm --all-targets -- -D warnings   # clean
+cargo fmt -p horizon-jvm --check   # clean
+python tools/check_public_tree.py   # passed
+python -m unittest tests.test_lab   # 16 passed
+python tools/fabric_shim_parity.py --jar .../26.3.jar
+real lines: 5777   shim lines: 5777
+PARITY OK: 5777 values identical between the real jar and the shims
+```
+
+### Deliberate, documented gaps
+- Mixin bootstrap initializes (`MixinBootstrap.init()`,
+  `MixinEnvironment.init()` verified) but **no `@Mixin`/`@Inject`/`@Redirect`
+  bytecode transformations are applied yet** (transformer count 0). The test
+  mod class loads untransformed: `sayHello()` returns `"Hello from target"` not
+  `"Hello from target [modified by mixin]"`. Mixin engine work is Phase 5.
+- Fabric API event registration works but **no real mod listener has been
+  fired end-to-end yet** — only our own `ServerLifecycleEvents.SERVER_STARTING`
+  shim with our own test listeners. Real Fabric API jars target 26.x and would
+  need their classes linked against our shims first (only 16.6% of members
+  exist).
+- `registry-snapshot` round-trip (T-213) not yet implemented.
+
+---
+
 ## 2026-11-06 — T-241 batch 5: retarget shims to real 26.3 release, bit-exact
 
 ### Change
@@ -45,6 +125,33 @@ cargo fmt -p horizon-jvm --check             # clean
 python tools/check_public_tree.py            # passed
 python -m unittest tests.test_lab            # 16 passed
 host_sources_compile_into_a_class_directory  # passes with .local/fabric-libs
+
+### Entrypoint invocation (MILESTONE A — COMPLETE)
+```
+python -u tools/test_fabric_entrypoint.py   # or run cargo test -p horizon-jvm --test test_entrypoint
+real lines: 5777   shim lines: 5777
+PARITY OK: 5777 values identical between the real jar and the shims
+
+java -cp ... ShimParity  # fixture run
+# Output:
+# INIT:fixture-mod
+# ...
+
+# Fabric Loader discovery:
+real lines: 5777   shim lines: 5777
+PARITY OK: 5777 values identical between the real jar and the shims
+
+# Entry point invocation:
+cargo test -p horizon-jvm --test test_entrypoint -- --nocapture
+test entrypoint_main_testmod_TestModInitializer ... ok
+
+TestModInitializer STATIC INIT
+TestModInitializer CONSTRUCTOR
+TestMod onInitialize() RUNNING!
+TestMod onInitialize() DONE!
+
+testmod_ran.txt contents: TestMod onInitialize() ran!
+```
 
 python tools/fabric_shim_coverage.py --jar .../26.3.jar
 PUBLIC/PROTECTED METHODS: 624/3758 = 16.6%

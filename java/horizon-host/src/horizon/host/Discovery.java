@@ -88,6 +88,11 @@ public final class Discovery {
             errors.add(cap(e.getMessage()));
         }
 
+        // Initialize all mods: Fabric Loader loads classes, applies Mixin
+        // transformations, and invokes entrypoints. This must be called before
+        // any mod code can run.
+        loader.load();
+
         List<String> disabled = new ArrayList<>();
         for (Set<ModCandidateImpl> set : environmentDisabled.values()) {
             for (ModCandidateImpl candidate : set) {

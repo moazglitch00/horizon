@@ -87,6 +87,8 @@ public final class Main {
                 } else if (frame instanceof Wire.Ping ping) {
                     wire.write(new Wire.Pong(ping.nonce()));
                 } else if (frame instanceof Wire.Discover discover) {
+                    Entrypoints.initGameInfo(
+                            Paths.get(discover.modsDir()), discover.gameVersion(), discover.side());
                     discover(wire, discover);
                 } else if (frame instanceof Wire.Shutdown shutdown) {
                     System.exit(shutdown.code());

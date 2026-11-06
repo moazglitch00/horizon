@@ -267,6 +267,20 @@ fn a_mod_entrypoint_runs_from_its_jar() {
     // 1. Compile the "loader" side: wire, entrypoint dispatcher, the Fabric
     //    interfaces and the test host. These are the classes Fabric Loader would
     //    put on the classpath; a mod jar never ships them.
+    let loader_jar = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join(".local")
+        .join("fabric-libs")
+        .join("fabric-loader-0.19.5.jar");
+    let asm_jar = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join(".local")
+        .join("fabric-libs")
+        .join("asm-9.10.1.jar");
+    let host_cp = format!("{};{}", loader_jar.display(), asm_jar.display());
+
     let host_sources = [
         java_src.join("horizon").join("host").join("Wire.java"),
         java_src
@@ -274,20 +288,13 @@ fn a_mod_entrypoint_runs_from_its_jar() {
             .join("host")
             .join("Entrypoints.java"),
         java_src
-            .join("net")
-            .join("fabricmc")
-            .join("api")
-            .join("ModInitializer.java"),
+            .join("horizon")
+            .join("host")
+            .join("HeadlessLauncher.java"),
         java_src
-            .join("net")
-            .join("fabricmc")
-            .join("api")
-            .join("ClientModInitializer.java"),
-        java_src
-            .join("net")
-            .join("fabricmc")
-            .join("api")
-            .join("DedicatedServerModInitializer.java"),
+            .join("horizon")
+            .join("host")
+            .join("HorizonGameProvider.java"),
         fixtures.join("EchoHost.java"),
     ];
     let mut javac = Command::new(&jdk.javac);
@@ -298,7 +305,9 @@ fn a_mod_entrypoint_runs_from_its_jar() {
         .arg("UTF-8")
         .arg("-proc:none")
         .arg("-d")
-        .arg(&host_classes);
+        .arg(&host_classes)
+        .arg("-cp")
+        .arg(&host_cp);
     for source in &host_sources {
         javac.arg(source);
     }
@@ -320,7 +329,7 @@ fn a_mod_entrypoint_runs_from_its_jar() {
         .arg("-d")
         .arg(&mod_classes)
         .arg("-cp")
-        .arg(&host_classes)
+        .arg(&host_cp)
         .arg(fixtures.join("TestModInitializer.java"));
     let output = javac.output().expect("javac (mod)");
     assert!(
@@ -353,7 +362,7 @@ fn a_mod_entrypoint_runs_from_its_jar() {
     let mut config = HostConfig::new(
         jdk.java.clone(),
         &host_classes,
-        Vec::new(),
+        vec![loader_jar, asm_jar],
         &game_dir,
         "26.3",
         Side::Client,
@@ -515,10 +524,9 @@ fn host_sources_compile_into_a_class_directory() {
     assert!(
         build
             .classes
-            .join("net")
-            .join("fabricmc")
-            .join("api")
-            .join("ModInitializer.class")
+            .join("horizon")
+            .join("host")
+            .join("Wire.class")
             .is_file()
     );
 }

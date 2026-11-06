@@ -236,9 +236,9 @@ pub const SOURCES: &[(&str, &str)] = &[
         ),
     ),
     (
-        "net/fabricmc/fabric/api/event/lifecycle/v1/ClientLifecycleEvents.java",
+        "net/fabricmc/fabric/api/client/event/lifecycle/v1/ClientLifecycleEvents.java",
         include_str!(
-            "../../../java/horizon-host/src/net/fabricmc/fabric/api/event/lifecycle/v1/ClientLifecycleEvents.java"
+            "../../../java/horizon-host/src/net/fabricmc/fabric/api/client/event/lifecycle/v1/ClientLifecycleEvents.java"
         ),
     ),
     (
@@ -416,20 +416,6 @@ pub const SOURCES: &[(&str, &str)] = &[
         ),
     ),
     (
-        "net/fabricmc/api/ModInitializer.java",
-        include_str!("../../../java/horizon-host/src/net/fabricmc/api/ModInitializer.java"),
-    ),
-    (
-        "net/fabricmc/api/ClientModInitializer.java",
-        include_str!("../../../java/horizon-host/src/net/fabricmc/api/ClientModInitializer.java"),
-    ),
-    (
-        "net/fabricmc/api/DedicatedServerModInitializer.java",
-        include_str!(
-            "../../../java/horizon-host/src/net/fabricmc/api/DedicatedServerModInitializer.java"
-        ),
-    ),
-    (
         "horizon/host/Entrypoints.java",
         include_str!("../../../java/horizon-host/src/horizon/host/Entrypoints.java"),
     ),
@@ -547,8 +533,8 @@ impl JavaHost {
         })?;
 
         let mut classpath: Vec<PathBuf> = Vec::with_capacity(config.libs.len() + 1);
-        classpath.push(config.classes.clone());
         classpath.extend(config.libs.iter().cloned());
+        classpath.push(config.classes.clone());
 
         let mut command = Command::new(&config.java);
         command

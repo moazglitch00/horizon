@@ -1,5 +1,3 @@
-import net.fabricmc.api.ModInitializer;
-
 /**
  * A minimal Fabric mod entrypoint used by the host tests.
  *
@@ -7,6 +5,8 @@ import net.fabricmc.api.ModInitializer;
  * proves the host loads a mod class from a jar, instantiates it, and runs
  * {@link #onInitialize()}. {@code evidence()} lets the test read back the effect.
  */
+import net.fabricmc.api.ModInitializer;
+
 public final class TestModInitializer implements ModInitializer {
     public static boolean initialized = false;
     public static String lastModId = "";

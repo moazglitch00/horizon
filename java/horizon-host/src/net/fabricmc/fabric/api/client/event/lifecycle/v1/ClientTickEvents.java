@@ -1,22 +1,23 @@
-package net.fabricmc.fabric.api.client.event.lifecycle.v1;
-
 import net.fabricmc.fabric.api.event.Event;
+import net.minecraft.client.Minecraft;
 
 /**
- * Minimal compatibility shim for Fabric's ClientTickEvents.
- * Phase 4 of fabric-runtime: Fabric API implementation.
+ * Compatibility shim for Minecraft's ClientTickEvents.
+ *
+ * <p>This is the real 26.3 surface: static final {@link Event} fields for
+ * client tick events.
  */
 public interface ClientTickEvents {
-    Event<StartTick> START_CLIENT_TICK = Event.create();
-    Event<EndTick> END_CLIENT_TICK = Event.create();
+    public static final Event<StartTick> START_CLIENT_TICK = new Event<>(StartTick.class);
+    public static final Event<EndTick> END_CLIENT_TICK = new Event<>(EndTick.class);
 
     @FunctionalInterface
     interface StartTick {
-        void onStartTick(Object client);
+        void onStartTick(Minecraft client);
     }
 
     @FunctionalInterface
     interface EndTick {
-        void onEndTick(Object client);
+        void onEndTick(Minecraft client);
     }
 }

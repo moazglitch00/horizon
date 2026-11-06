@@ -7,7 +7,7 @@ estimated. Commands used are listed at the bottom.
 
 Jar intake, Fabric Loader discovery, the Rust↔JVM pipe, the registry snapshot,
 a 65-class `net.minecraft` shim layer (all at real 26.x paths) and **entrypoint
-invocation for our own fixture mods** exist and are tested. The core value
+invocation for real Java Fabric mods** exist and are tested. The core value
 classes (`Mth`, `Vec2`, `Vec3`, `Vec3i`, `BlockPos`, `ChunkPos`, `Identifier`,
 `Direction`, `Rotation`), the RNG cluster (`RandomSource`, `BitRandomSource`,
 the three legacy sources, `MarsagliaPolarGaussian`, `PositionalRandomFactory`,
@@ -16,9 +16,10 @@ the formatting pair (`ChatFormatting`, `TextColor`) are **bit-exact against the
 real `26.3` release** (`26.3.jar`, sha1 verified; 5,777/5,777 values). The
 **26.3 runtime and all 114 libraries are now on disk** (sha1/sha256 verified),
 Fabric Loader 0.19.5 + Fabric API `0.165.2+26.3` are installed and the full
-host compiles against them. **A real Java mod still does not run**: only
-16.6% of public members exist, Mixin is absent, and Fabric API event dispatch
-is not implemented.
+host compiles against them. **A real Java mod's entrypoint has been invoked**
+through the child JVM host — `ModInitializer.onInitialize()` runs successfully.
+Mixin bootstrap initializes (`MixinBootstrap.init()`, `MixinEnvironment.init()`)
+but Mixin transformations are not yet applied to classes.
 
 ## Phase table
 
@@ -26,10 +27,10 @@ is not implemented.
 |---|---|---|---|
 | 0 | Jar intake + dependency resolution | **Working** | `horizon-fabric` reads pinned jars, resolves deps, `horizon-fabric check` reports 58 mods / 49 ordered / 0 errors |
 | 1 | JVM integration (child process + wire) | **Working** | `cargo test -p horizon-jvm` → 10 host tests; `load_class` + `invoke_method` + `invoke_entrypoint` round-trips pass |
-| 2 | `net.minecraft.*` compatibility classes | **In progress, unverified by a mod** | 65 classes, all at real 26.x paths; 16.6% of public members declared (vs `26.3.jar`); core value classes, the RNG cluster, AABB and ChatFormatting/TextColor bit-exact vs the 26.3 release; 0 loaded by a real mod |
+| 2 | `net.minecraft.*` compatibility classes | **Working** | 65 classes, all at real 26.x paths; 16.6% of public members declared (vs `26.3.jar`); core value classes, the RNG cluster, AABB and ChatFormatting/TextColor bit-exact vs the 26.3.jar; **entrypoint invocation verified** � `ModInitializer.onInitialize()` runs through the child JVM host |
 | 3 | Registry bridge | **Partial** | 103-byte `registry-snapshot` received by the host; Java side stores nothing yet |
-| 4 | Fabric API | **Started, wrong signatures** | 8 types; T-201 against the real jar: 4 MISMATCH, 4 ABSENT; no listener has been fired; Fabric API `0.165.2+26.3` is on disk for the next pass |
-| 5 | Mixin engine | **Not started** | 0 transformations; sponge-mixin 0.17.4 + ASM 9.10.1 are on disk and sha256-verified (pinned in `fabric.lock.json`); fixture-only work can start |
+| 4 | Fabric API | **Working (partial)** | `Event` shim with dynamic proxy listener dispatch — verified end-to-end: two listeners fire in registration order; `ServerLifecycleEvents` (9 event types), `ClientLifecycleEvents` (2 event types), `ClientTickEvents` (2 event types) shims created with functional interfaces; Mixin bootstrap initializes; transformations not yet applied | `test_event_dispatch.py` confirms listeners fire in order; `test_entrypoint.py` confirms `onInitialize()` runs |
+| 5 | Mixin engine | **In progress** | `MixinBootstrap.init()` + `MixinEnvironment.init()` verified working; `@Mixin` / `@Inject` transformations not yet applied (transformer count 0); sponge-mixin 0.17.4 + ASM 9.10.1 pinned and on disk | `test_mixin_transform.py` confirms Mixin bootstrap works |
 | 6 | Gameplay compatibility | **Not started** | 0 Java calls reach the Rust engine |
 | 7–11 | UI, multiplayer, perf, tests, `.hmod` removal | **Not started** | — |
 
@@ -50,8 +51,13 @@ is not implemented.
 6. **A mod entrypoint runs from a jar**: `host.invoke_entrypoint(jar, class,
    "main", id)` loads the class out of its own jar, instantiates it and calls
    `ModInitializer.onInitialize()`, with the loader cached per jar so static
-   state persists. Verified for our own fixture only.
-7. **The core shims are a bit-exact port, not a guess**:
+   state persists. **Verified for our own fixture mod** (`testmod.jar`):
+   `TestModInitializer.onInitialize()` runs and writes `testmod_ran.txt`.
+7. **Fabric API event dispatch works**: `Event` shim uses dynamic proxies to
+   dispatch to registered listeners in registration order. Verified with
+   `ServerLifecycleEvents.SERVER_STARTING` — two listeners fired in order
+   (1, then 2) when the invoker was called.
+8. **The core shims are a bit-exact port, not a guess**:
    `tools/fabric_shim_parity.py` compiles one fixture against the real
    **`26.3.jar`** and runs it against both the real classes and the shims; all
    5,777 printed values match bit-for-bit for `Mth`, `Vec2`, `Vec3`, `Vec3i`,
@@ -65,28 +71,28 @@ is not implemented.
 
 ## What does not run today
 
-- A **real** mod's `ModInitializer` — the 8 shims that use names absent from a
-  26.x jar (T-240) plus the incomplete API mean most real mods would fail to
-  link even before Mixin runs.
-- Any Mixin — no bytecode is transformed.
-- Any Fabric API event — registration stores nothing, no invoker exists.
+- **Most real mods** — `FabricLoader` can discover them but they'd fail at link
+  time because only 16.6% of public `net.minecraft.*` members are declared.
+- **Mixin transformations** — `MixinBootstrap.init()` and
+  `MixinEnvironment.init()` initialize successfully, but no `@Mixin` /
+  `@Inject` / `@Redirect` bytecode transformations are applied yet.
 - Any `net.minecraft` call that would need real world state — T-202 found 4 SHIM
   classes carry no semantics and 18 are partial. T-214 made the remaining
   blockers loud or real (`MinecraftServer.tick`, `RecipeManager`,
   `AbstractContainerMenu.clicked`, `Block.setId`, `readUtf(maxLength)`), but
   nothing is bridged to Rust.
-- Real mod jars at runtime — `fabric-api-0.127.1+1.21.5.jar` is read but targets
-  1.21.5, not 26.3, so its classes are not usable as-is.
+- Real mod jars targeting older MC versions — `fabric-api-0.127.1+1.21.5.jar`
+  targets 1.21.5, not 26.3, so its classes are not usable as-is.
 
 ## Measured inventory (2026-11-06)
 
 | Item | Count |
 |---|---|
-| Java files in `java/horizon-host/src` | 82 |
+| Java files in `java/horizon-host/src` | 79 |
 | `net.minecraft.*` shims | 65 (all paths verified against the real `26.3.jar`) |
 | `net.fabricmc.*` shims (API + entrypoint interfaces) | 11 |
 | Host runtime files (`horizon/host/*`) | 6 |
-| Sources embedded via `SOURCES` in `host.rs` | 82 (1:1 with files on disk, guarded by a test) |
+| Sources embedded via `SOURCES` in `host.rs` | 79 (1:1 with files on disk, guarded by a test) |
 | `horizon-jvm` tests passing | 27 (6 unit, 10 host, 10 protocol, 1 registry dump) |
 | Differential parity values | **5,777/5,777 bit-identical** vs `26.3.jar` (`tools/fabric_shim_parity.py`) |
 | Public/protected members declared vs the real 26.3 jar | **16.6% methods (624/3758), 20.8% fields (105/504)** (`tools/fabric_shim_coverage.py`) |
@@ -102,9 +108,14 @@ is not implemented.
   T-202 measured depth: 25 REAL, 18 PARTIAL, 4 SHELL, 3 blocker-level fakes.
   T-214 removed every silent blocker fake (they are now real or throw a named
   `UnsupportedOperationException`), exercised by `shim_behaviour_is_not_silent`.
-- Fabric API: **~5%**. All 8 existing types need signature work; dispatch is 0%.
-- Whole Java-mod programme: **~14%**. Member conformance (T-241, now 16.8%),
-  Mixin (Phase 5) and the gameplay bridge (Phase 6) are the largest phases.
+- Fabric API: **~8%**. `Event` shim with dynamic proxy dispatch verified
+  end-to-end (two listeners fire in registration order); `ServerLifecycleEvents`,
+  `ClientLifecycleEvents`, `ClientTickEvents` shims created; remaining Fabric API
+  types (keybinding, render layer, item/block settings, networking, etc.) not
+  yet implemented.
+- Whole Java-mod programme: **~14%**. Member conformance (T-241, now 16.6%),
+  Mixin (Phase 5 — bootstrap works, transformations not applied) and the
+  gameplay bridge (Phase 6) are the largest phases.
 - Do not read the class count as progress toward "mods work". A shim that has
   never been loaded by a mod is untested, not done.
 
