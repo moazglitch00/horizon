@@ -57,7 +57,7 @@ exercised by a mod, so its fidelity is unproven.
 | fabric-screen-api-v1 | PLANNED | |
 | fabric-biome-api-v1 | PLANNED | |
 
-## Minecraft Java API — 60 shims
+## Minecraft Java API — 63 shims
 
 All rows are **SHIM** unless noted: they compile with `javac --release 21` into
 the host and have a smoke check, but no mod has loaded them. The T-202 audit
@@ -68,7 +68,7 @@ T-214 removed the silent fakes.
 `class_*` entries), so 26.x mods reference these official names directly.
 Intermediary remapping only applies to ≤1.21 mods (T-230, deferred).
 
-**Path conformance (measured against `26.1.2.jar`):** **60/60**. T-240 renamed
+**Path conformance (measured against `26.1.2.jar`):** **63/63**. T-240 renamed
 the 8 Yarn/older paths (`client.MinecraftClient`→`client.Minecraft`,
 `util.Identifier`+`resources.ResourceLocation`→`resources.Identifier`,
 `world.entity.player.PlayerEntity`→`...Player`,
@@ -76,24 +76,27 @@ the 8 Yarn/older paths (`client.MinecraftClient`→`client.Minecraft`,
 `world.level.ServerWorld`→`server.level.ServerLevel`,
 `attributes.Attribute`→`world.entity.ai.attributes.Attribute`; `network.chat.Text`
 was deleted). T-241 added the RNG cluster (`RandomSource`,
-`world.level.levelgen.*`). `shim_paths_match_the_verified_26x_set` guards the set.
+`world.level.levelgen.*`) and the hit-test cluster (`AABB`, `HitResult`,
+`BlockHitResult`). `shim_paths_match_the_verified_26x_set` guards the set.
 
 **Member conformance (measured with `tools/fabric_shim_coverage.py`):**
-**15.3%** of public/protected methods (555/3618) and **9.4%** of fields (60/639).
+**16.8%** of public/protected methods (620/3685) and **10.4%** of fields (67/646).
 This, not the path count, is the linking gap: mods call members, and a missing
 one is `NoSuchMethodError`.
 
 **Differential parity (measured with `tools/fabric_shim_parity.py`):** the
 fixture runs the same source against the real `26.1.2.jar` and against the
-shims; **5,730/5,730 values are bit-identical** for `Mth`, `Vec2`, `Vec3`,
-`Vec3i`, `BlockPos`, `ChunkPos`, `Identifier`, `Direction`, `Rotation` and the
+shims; **5,849/5,849 values are bit-identical** for `Mth`, `Vec2`, `Vec3`,
+`Vec3i`, `BlockPos`, `ChunkPos`, `Identifier`, `Direction`, `Rotation`,
+`AABB`, `HitResult`, `BlockHitResult` and the
 RNG cluster (`RandomSource`, `BitRandomSource`, `LegacyRandomSource`,
 `SingleThreadedRandomSource`, `ThreadSafeLegacyRandomSource`,
 `MarsagliaPolarGaussian`, `PositionalRandomFactory`, `RandomSupport`). This
-proves *those members* behave like vanilla; it does not prove the other ~85%
+proves *those members* behave like vanilla; it does not prove the other ~83%
 of members exist or behave. The oracle caught one vanilla quirk worth
 naming: `RandomSource.triangle` multiplies the random difference by `max`,
-not by `max - min`.
+not by `max - min`; the Iterable clip path also translates block-local shapes
+by the `BlockPos` before testing them.
 
 | Package | Classes |
 |---|---|
@@ -116,7 +119,7 @@ not by `max - min`.
 | `net.minecraft.world.entity.player` | `Player` |
 | `net.minecraft.world.entity.ai.goal` | `Goal` |
 | `net.minecraft.world.entity.ai.attributes` | `Attribute`, `AttributeSupplier` |
-| `net.minecraft.world.phys` | `Vec2`, `Vec3` |
+| `net.minecraft.world.phys` | `Vec2`, `Vec3`, `AABB`, `HitResult`, `BlockHitResult` |
 | `net.minecraft.world.inventory` | `AbstractContainerMenu` |
 | `net.minecraft.world` | `Container` |
 | `net.minecraft.world.damagesource` | `DamageSource` |
@@ -136,7 +139,7 @@ not by `max - min`.
 
 `BlockBehaviour`, `Item$Settings`, `Block$Settings`, `TagKey`, `Tags`,
 `BuiltInRegistries`, `Registries`, `Holder`, `HolderLookup`, `DataComponents`,
-`InteractionResult`, `BlockHitResult`, `AABB`, `BlockBox`, `EntityType$Builder`,
+`InteractionResult`, `BlockBox`, `EntityType$Builder`,
 `SpawnGroup`, `Structure`, `BiomeSource`, `ChunkGenerator`, `PacketByteBuf`,
 `CustomPayload`, `ResourceManager`, `ClientPlayerEntity`, `WorldRenderEvents`
 types. Each needs its real signature before implementation — this list is the

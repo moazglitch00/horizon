@@ -3,6 +3,7 @@ package net.minecraft.util;
 import java.util.UUID;
 import java.util.function.IntPredicate;
 import net.minecraft.core.Vec3i;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -18,10 +19,9 @@ import net.minecraft.world.phys.Vec3;
  * {@code tools/fabric_shim_parity.py} (same inputs, bit-exact output).
  *
  * <p>Not ported here because they need shims this layer does not have yet, and
- * a stub would be a lie: {@code rayIntersectsAABB} (AABB),
- * {@code rotationAroundAxis} (joml), {@code mulAndTruncate} (commons-lang3),
- * {@code outFromOrigin} (streams), and the joml axis constants
- * {@code X_AXIS/Y_AXIS/Z_AXIS}.
+ * a stub would be a lie: {@code rotationAroundAxis} (joml),
+ * {@code mulAndTruncate} (commons-lang3), {@code outFromOrigin} (streams),
+ * and the joml axis constants {@code X_AXIS/Y_AXIS/Z_AXIS}.
  */
 public class Mth {
     public static final float PI = 3.1415927F;
@@ -662,6 +662,41 @@ public class Mth {
 
     public static float randomBetween(RandomSource random, float min, float max) {
         return random.nextFloat() * (max - min) + min;
+    }
+
+    public static boolean rayIntersectsAABB(Vec3 from, Vec3 direction, AABB box) {
+        double centerX = (box.minX + box.maxX) * 0.5;
+        double halfX = (box.maxX - box.minX) * 0.5;
+        double offsetX = from.x - centerX;
+        if (Math.abs(offsetX) > halfX && offsetX * direction.x >= 0.0) {
+            return false;
+        }
+        double centerY = (box.minY + box.maxY) * 0.5;
+        double halfY = (box.maxY - box.minY) * 0.5;
+        double offsetY = from.y - centerY;
+        if (Math.abs(offsetY) > halfY && offsetY * direction.y >= 0.0) {
+            return false;
+        }
+        double centerZ = (box.minZ + box.maxZ) * 0.5;
+        double halfZ = (box.maxZ - box.minZ) * 0.5;
+        double offsetZ = from.z - centerZ;
+        if (Math.abs(offsetZ) > halfZ && offsetZ * direction.z >= 0.0) {
+            return false;
+        }
+        double absX = Math.abs(direction.x);
+        double absY = Math.abs(direction.y);
+        double absZ = Math.abs(direction.z);
+
+        double crossYZ = direction.y * offsetZ - direction.z * offsetY;
+        if (Math.abs(crossYZ) > halfY * absZ + halfZ * absY) {
+            return false;
+        }
+        double crossZX = direction.z * offsetX - direction.x * offsetZ;
+        if (Math.abs(crossZX) > halfX * absZ + halfZ * absX) {
+            return false;
+        }
+        double crossXY = direction.x * offsetY - direction.y * offsetX;
+        return Math.abs(crossXY) < halfX * absY + halfY * absX;
     }
 
     public static float normal(RandomSource random, float mean, float deviation) {

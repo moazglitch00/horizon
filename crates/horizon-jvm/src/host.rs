@@ -294,6 +294,18 @@ pub const SOURCES: &[(&str, &str)] = &[
         include_str!("../../../java/horizon-host/src/net/minecraft/world/phys/Vec2.java"),
     ),
     (
+        "net/minecraft/world/phys/AABB.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/phys/AABB.java"),
+    ),
+    (
+        "net/minecraft/world/phys/BlockHitResult.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/phys/BlockHitResult.java"),
+    ),
+    (
+        "net/minecraft/world/phys/HitResult.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/world/phys/HitResult.java"),
+    ),
+    (
         "net/minecraft/world/level/block/Rotation.java",
         include_str!(
             "../../../java/horizon-host/src/net/minecraft/world/level/block/Rotation.java"

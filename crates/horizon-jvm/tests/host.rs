@@ -671,6 +671,9 @@ fn shim_paths_match_the_verified_26x_set() {
         "net/minecraft/world/level/storage/loot/LootContext.java",
         "net/minecraft/world/level/storage/loot/LootTable.java",
         "net/minecraft/world/level/block/Rotation.java",
+        "net/minecraft/world/phys/AABB.java",
+        "net/minecraft/world/phys/BlockHitResult.java",
+        "net/minecraft/world/phys/HitResult.java",
         "net/minecraft/world/phys/Vec2.java",
         "net/minecraft/world/phys/Vec3.java",
     ];

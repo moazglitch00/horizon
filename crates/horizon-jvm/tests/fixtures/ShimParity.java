@@ -1,4 +1,5 @@
 import java.util.EnumSet;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.IntPredicate;
 import net.minecraft.core.BlockPos;
@@ -13,6 +14,8 @@ import net.minecraft.world.level.levelgen.PositionalRandomFactory;
 import net.minecraft.world.level.levelgen.RandomSupport;
 import net.minecraft.world.level.levelgen.SingleThreadedRandomSource;
 import net.minecraft.world.level.levelgen.ThreadSafeLegacyRandomSource;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 
@@ -129,6 +132,7 @@ public final class ShimParity {
         mthLerp();
         mthBits();
         rng();
+        aabb();
         vectorMath();
         blockPos();
         chunkPos();
@@ -403,6 +407,164 @@ public final class ShimParity {
         }
         pf("mth.nextFloatEqual", Mth.nextFloat(RandomSource.create(0L), 4.5F, 4.5F));
         pd("mth.nextDoubleEqual", Mth.nextDouble(RandomSource.create(0L), 4.5, 4.5));
+    }
+
+    /**
+     * AABB coverage: construction, geometry, overlap, clipping and the
+     * {@link net.minecraft.world.phys.HitResult} it produces. NaN boxes are
+     * only exercised through {@code hasNaN}, where no comparison is
+     * ambiguous.
+     */
+    private static void aabb() {
+        AABB box = new AABB(-3.75, -1.25, 0.5, 7.5, 9.0, 1.5);
+        pd("aabb.minX", box.minX);
+        pd("aabb.minY", box.minY);
+        pd("aabb.minZ", box.minZ);
+        pd("aabb.maxX", box.maxX);
+        pd("aabb.maxY", box.maxY);
+        pd("aabb.maxZ", box.maxZ);
+        p("aabb.hashCode", box.hashCode());
+        p("aabb.equals.copy", box.equals(new AABB(-3.75, -1.25, 0.5, 7.5, 9.0, 1.5)) ? 1 : 0);
+        p("aabb.equals.swapped", box.equals(new AABB(7.5, 9.0, 1.5, -3.75, -1.25, 0.5)) ? 1 : 0);
+        p("aabb.equals.other", box.equals(new AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)) ? 1 : 0);
+        p("aabb.hasNaN", new AABB(Double.NaN, 0.0, 0.0, 1.0, 1.0, 1.0).hasNaN() ? 1 : 0);
+        p("aabb.hasNaN.clean", box.hasNaN() ? 1 : 0);
+
+        Vec3 span = new Vec3(-1.0, 2.0, 3.0);
+        pd("aabb.fromVec.minX", new AABB(span, new Vec3(2.0, 4.0, -6.0)).minX);
+        pd("aabb.fromVec.minY", new AABB(span, new Vec3(2.0, 4.0, -6.0)).minY);
+        pd("aabb.fromVec.minZ", new AABB(span, new Vec3(2.0, 4.0, -6.0)).minZ);
+        pd("aabb.unitCube.maxX", AABB.unitCubeFromLowerCorner(span).maxX);
+        pd("aabb.encapsulating.minX", AABB.encapsulatingFullBlocks(new BlockPos(5, 0, 0), new BlockPos(-2, 3, 8)).minX);
+        pd("aabb.encapsulating.maxX", AABB.encapsulatingFullBlocks(new BlockPos(5, 0, 0), new BlockPos(-2, 3, 8)).maxX);
+        pd("aabb.encapsulating.maxY", AABB.encapsulatingFullBlocks(new BlockPos(5, 0, 0), new BlockPos(-2, 3, 8)).maxY);
+
+        pd("aabb.xsize", box.getXsize());
+        pd("aabb.ysize", box.getYsize());
+        pd("aabb.zsize", box.getZsize());
+        pd("aabb.getSize", box.getSize());
+        pd("aabb.distanceToSqr.vecInside", box.distanceToSqr(new Vec3(0.0, 0.0, 0.0)));
+        pd("aabb.distanceToSqr.vecOutside", box.distanceToSqr(new Vec3(20.0, 30.0, -40.0)));
+        AABB other = new AABB(10.0, 10.0, 10.0, 12.0, 12.0, 12.0);
+        pd("aabb.distanceToSqr.aabb", box.distanceToSqr(other));
+        AABB overlapping = new AABB(5.0, 5.0, 0.0, 15.0, 15.0, 5.0);
+        pd("aabb.distanceToSqr.aabbOverlap", box.distanceToSqr(overlapping));
+
+        for (Direction.Axis axis : Direction.Axis.values()) {
+            pd("aabb.min." + axis.getName(), box.min(axis));
+            pd("aabb.max." + axis.getName(), box.max(axis));
+        }
+
+        Vec3[] probes = {
+            new Vec3(0.0, 0.0, 0.0),
+            new Vec3(-3.75, -1.25, 0.5),
+            new Vec3(7.5, 9.0, 1.5),
+            new Vec3(-3.76, 0.0, 0.0),
+            new Vec3(0.0, 99.0, 0.0),
+            new Vec3(100.0, 100.0, 100.0),
+        };
+        for (int i = 0; i < probes.length; i++) {
+            p("aabb.contains." + i, box.contains(probes[i]) ? 1 : 0);
+            pd("aabb.distanceToSqr.probe." + i, box.distanceToSqr(probes[i]));
+        }
+
+        AABB[] candidates = {
+            new AABB(-1.0, -1.0, -1.0, 1.0, 1.0, 1.0),
+            new AABB(7.5, 9.0, 1.5, 10.0, 10.0, 2.0),
+            new AABB(8.0, 8.0, 8.0, 9.0, 9.0, 9.0),
+            new AABB(-10.0, -10.0, -10.0, -3.75, 0.0, 0.0),
+        };
+        for (int i = 0; i < candidates.length; i++) {
+            p("aabb.intersects." + i, box.intersects(candidates[i]) ? 1 : 0);
+            pd("aabb.intersect.minX." + i, box.intersect(candidates[i]).minX);
+            pd("aabb.intersect.maxX." + i, box.intersect(candidates[i]).maxX);
+            pd("aabb.minmax.minX." + i, box.minmax(candidates[i]).minX);
+            pd("aabb.minmax.maxX." + i, box.minmax(candidates[i]).maxX);
+        }
+        pd("aabb.intersects.blockpos", box.intersects(new BlockPos(0, 0, 0)) ? 1 : 0);
+        pd("aabb.intersects.blockposEdge", box.intersects(new BlockPos(8, 9, 2)) ? 1 : 0);
+        pd("aabb.intersects.vec", box.intersects(new Vec3(-10.0, -10.0, -10.0), new Vec3(0.0, 0.0, 0.0)) ? 1 : 0);
+        pd("aabb.intersects.vecFlat", box.intersects(new Vec3(-10.0, 0.0, 0.0), new Vec3(10.0, 0.0, 0.0)) ? 1 : 0);
+
+        pd("aabb.inflate.x", box.inflate(1.5, 0.25, -2.0).minX);
+        pd("aabb.inflate.max", box.inflate(1.5, 0.25, -2.0).maxZ);
+        pd("aabb.inflate.all", box.inflate(2.0).minX);
+        pd("aabb.deflate.x", box.deflate(1.0).minX);
+        pd("aabb.contract.x", box.contract(1.0, -1.0, 0.5).minX);
+        pd("aabb.contract.max", box.contract(0.5, 2.0, -0.25).maxY);
+        pd("aabb.expand.x", box.expandTowards(new Vec3(-2.0, 0.0, 0.0)).minX);
+        pd("aabb.expand.max", box.expandTowards(new Vec3(3.0, 0.0, 0.0)).maxX);
+        pd("aabb.move.x", box.move(10.0, 20.0, 30.0).minX);
+        pd("aabb.move.vec", box.move(new Vec3(1.0, 2.0, 3.0)).minY);
+        pd("aabb.move.blockpos", box.move(new BlockPos(-3, 7, 1)).minZ);
+
+        pd("aabb.center.x", box.getCenter().x);
+        pd("aabb.center.y", box.getCenter().y);
+        pd("aabb.center.z", box.getCenter().z);
+        pd("aabb.bottomCenter.y", box.getBottomCenter().y);
+        pd("aabb.minPosition", box.getMinPosition().z);
+        pd("aabb.maxPosition", box.getMaxPosition().y);
+        pd("aabb.ofSize.minX", AABB.ofSize(new Vec3(10.0, 20.0, 30.0), 6.0, 4.0, 10.0).minX);
+        pd("aabb.ofSize.maxZ", AABB.ofSize(new Vec3(10.0, 20.0, 30.0), 6.0, 4.0, 10.0).maxZ);
+
+        Vec3 fromWest = new Vec3(-10.0, 1.0, 1.0);
+        Vec3 toWest = new Vec3(0.0, 1.0, 1.0);
+        printOptionalHit(box.clip(fromWest, toWest), "aabb.clipW");
+        Vec3 fromTop = new Vec3(0.0, 20.0, 1.0);
+        Vec3 toTop = new Vec3(0.0, -20.0, 1.0);
+        printOptionalHit(box.clip(fromTop, toTop), "aabb.clipY");
+        Vec3 fromFar  = new Vec3(0.0, 20.0, -10.0);
+        Vec3 toFar    = new Vec3(0.0, 20.0, 10.0);
+        printOptionalHit(box.clip(fromFar, toFar), "aabb.clipZMiss");
+        Vec3 fromMiss = new Vec3(-10.0, 20.0, 1.0);
+        Vec3 toMiss   = new Vec3(0.0, 20.0, 1.0);
+        printOptionalHit(box.clip(fromMiss, toMiss), "aabb.clipNoHit");
+
+        // Vanilla translates every box in the iterable by the block position,
+        // so the boxes passed here are block-local shapes. A unit cube at
+        // world (2, 2, 2) is hit from the west at x = 2.0.
+        BlockPos hitPos = new BlockPos(2, 2, 2);
+        AABB unitCube = new AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
+        AABB unitCubeOffset = new AABB(-0.5, 0.0, 0.0, 0.5, 1.0, 1.0);
+        Vec3 fromLocal = new Vec3(-5.0, 2.5, 2.5);
+        Vec3 toLocal = new Vec3(10.0, 2.5, 2.5);
+        BlockHitResult iterableHit = AABB.clip(List.of(unitCube), fromLocal, toLocal, hitPos);
+        ps("aabb.clipIter.direction", iterableHit == null ? "null" : iterableHit.getDirection().getName());
+        ps("aabb.clipIter.type", iterableHit == null ? "null" : iterableHit.getType().name());
+        pd("aabb.clipIter.x", iterableHit == null ? 0.0 : iterableHit.getLocation().x);
+        pd("aabb.clipIter.y", iterableHit == null ? 0.0 : iterableHit.getLocation().y);
+        pd("aabb.clipIter.z", iterableHit == null ? 0.0 : iterableHit.getLocation().z);
+        p("aabb.clipIter.inside", iterableHit == null ? -1 : (iterableHit.isInside() ? 1 : 0));
+        p("aabb.clipIter.blockPosX", iterableHit == null ? -1 : iterableHit.getBlockPos().getX());
+        p("aabb.clipIter.blockPosY", iterableHit == null ? -1 : iterableHit.getBlockPos().getY());
+        p("aabb.clipIter.blockPosZ", iterableHit == null ? -1 : iterableHit.getBlockPos().getZ());
+        BlockHitResult iterableMiss = AABB.clip(List.of(unitCube), fromMiss, toMiss, hitPos);
+        ps("aabb.clipIter.miss", iterableMiss == null ? "null" : iterableMiss.getDirection().getName());
+        BlockHitResult nearFirst = AABB.clip(List.of(unitCube, unitCubeOffset), fromLocal, toLocal, hitPos);
+        ps("aabb.clipIter.nearFirst", nearFirst == null ? "null" : nearFirst.getDirection().getName());
+        pd("aabb.clipIter.nearFirstX", nearFirst == null ? 0.0 : nearFirst.getLocation().x);
+        BlockHitResult nearSecond = AABB.clip(List.of(unitCubeOffset, unitCube), fromLocal, toLocal, hitPos);
+        ps("aabb.clipIter.nearSecond", nearSecond == null ? "null" : nearSecond.getDirection().getName());
+        pd("aabb.clipIter.nearSecondX", nearSecond == null ? 0.0 : nearSecond.getLocation().x);
+
+        p("aabb.collided", box.collidedAlongVector(new Vec3(5.0, 0.0, 0.0),
+                List.of(new AABB(10.0, 10.0, 10.0, 12.0, 12.0, 12.0))) ? 1 : 0);
+        p("aabb.collidedEmpty", box.collidedAlongVector(new Vec3(5.0, 0.0, 0.0), List.of()) ? 1 : 0);
+
+        p("mth.rayHitWest", Mth.rayIntersectsAABB(fromWest, new Vec3(10.0, 0.0, 0.0), box) ? 1 : 0);
+        p("mth.rayHitSouth", Mth.rayIntersectsAABB(new Vec3(0.0, 1.0, -10.0), new Vec3(0.0, 0.0, 10.0), box) ? 1 : 0);
+        p("mth.rayAway", Mth.rayIntersectsAABB(new Vec3(-10.0, 1.0, 1.0), new Vec3(-1.0, 0.0, 0.0), box) ? 1 : 0);
+        p("mth.rayOffset", Mth.rayIntersectsAABB(new Vec3(-10.0, 100.0, 100.0), new Vec3(10.0, 0.0, 0.0), box) ? 1 : 0);
+        p("mth.rayInside", Mth.rayIntersectsAABB(new Vec3(0.0, 0.0, 0.0), new Vec3(1.0, 1.0, 0.0), box) ? 1 : 0);
+    }
+
+    private static void printOptionalHit(java.util.Optional<Vec3> hit, String key) {
+        ps(key + ".found", hit.isPresent() ? "yes" : "no");
+        if (hit.isPresent()) {
+            pd(key + ".x", hit.get().x);
+            pd(key + ".y", hit.get().y);
+            pd(key + ".z", hit.get().z);
+        }
     }
 
     private static void vectorMath() {

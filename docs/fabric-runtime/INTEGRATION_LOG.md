@@ -5,6 +5,70 @@ what proved it, and what it did **not** prove.
 
 ---
 
+## 2026-11-06 — T-241 batch 3: AABB and ray intersection, bit-exact
+
+### Change
+- Added 3 shims transcribed from the real bytecode, plus `HitResult` implements
+  its nested `Type` enum (MISS / BLOCK / ENTITY; `BLOCK` is returned for
+  block hits):
+  - `net/minecraft/world/phys/AABB.java`: full surface except
+    `of(BoundingBox)` (needs a `structure.BoundingBox` shim) and
+    `move(org.joml.Vector3f)` (needs joml) — both documented, neither stubbed.
+    NaN comparisons use vanilla's `dcmpg`/`dcmpl` semantics via private helpers
+    (`dcmpGe`/`dcmpLe`/`dcmpLt`), because Java's own operators swallow NaN.
+  - `net/minecraft/world/phys/HitResult.java`: `distanceTo` returns
+    **squared** distance (vanilla takes no square root).
+  - `net/minecraft/world/phys/BlockHitResult.java`: `miss()`, `withDirection`,
+    `withPosition`, `hitBorder`, the private 6-argument constructor.
+  - `tools` side: `Mth.rayIntersectsAABB` ported (vanilla omits the final `<`
+    comparison's equality case: `ifge` jumps on `>=`, so the test is strict).
+- `SOURCES` and `VERIFIED` grew to 80 entries (1:1, guarded by a test).
+- Extended `ShimParity.java` with 100+ `AABB` values: constructor
+  normalisation, `equals`/`hashCode`, `contains`/`intersects` (box, point,
+  BlockPos), `inflate`/`deflate`/`contract`/`expandTowards`/`move`,
+  `distanceToSqr`, `clip(Vec3, Vec3)`, `clip(Iterable, from, to, pos)` whose
+  vanilla contract **translates every box by `pos`** (block-local shapes),
+  `collidedAlongVector`, and `Mth.rayIntersectsAABB`.
+
+### Proof
+```
+python -u tools/fabric_shim_parity.py --report 30
+real lines: 5849   shim lines: 5849
+PARITY OK: 5849 values identical between the real jar and the shims
+
+cargo test -p horizon-jvm                    # 27 passed (rerun once after a
+                                             # known transient Windows os error 5)
+cargo clippy -p horizon-jvm --all-targets -- -D warnings   # clean
+cargo fmt -p horizon-jvm --check             # clean
+
+python tools/fabric_shim_coverage.py --jar .../26.1.2.jar
+PUBLIC/PROTECTED METHODS: 620/3685 = 16.8%
+PUBLIC/PROTECTED FIELDS:    67/646 = 10.4%
+```
+
+### Difference the oracle found
+- `AABB.clip(Iterable, from, to, pos)` returns the **null** reference when no
+  box is hit (not an empty `Optional`), and its boxes are block-local
+  coordinates translated by `pos` before clipping. The first fixture run had
+  the transform missing and the shim returned null on a scene the real jar
+  confirmed; fixed in the shim (`getDirection(box.move(pos), ...)`) and in
+  the fixture (unit cube at `BlockPos(2, 2, 2)`, ray at y/z = 2.5 hits the
+  WEST face at x = 2.0).
+
+### Deliberate, documented gaps
+- `AABB.toString()` is not ported: vanilla builds it with
+  `StringConcatFactory.makeConcatWithConstants` and the recipe string is only
+  visible inside the bytecode; guessing it would be a silent mismatch. All
+  other public members are ported.
+- `of(BoundingBox)` and `move(Vector3f)` need types this layer does not have
+  yet (`net.minecraft.world.level.levelgen.structure.BoundingBox`, joml). Both
+  are named here rather than stubbed.
+- `BlockHitResult` needs nothing else; `AABB` is unblocks `Level.clip`
+  semantics for a future gameplay bridge.
+
+Did **not** prove: that a mod links or runs — same limitation as before,
+only larger value coverage.
+
 ## 2026-11-06 — T-241 batch 2: the RNG cluster, bit-exact
 
 ### Change
