@@ -5,6 +5,76 @@ what proved it, and what it did **not** prove.
 
 ---
 
+## 2026-11-06 — T-241 batch 2: the RNG cluster, bit-exact
+
+### Change
+- Added 8 shims, all transcribed from the real bytecode:
+  - `net/minecraft/util/RandomSource.java` (the interface and the default
+    `nextIntBetweenInclusive` / `triangle` / `consumeCount` / `nextInt(origin,
+    bound)` bodies, plus `create`/`createThreadSafe`/`createThreadLocalInstance`),
+  - `net/minecraft/world/level/levelgen/BitRandomSource.java` (48-bit
+    primitives, including the rejection loop in `nextInt(int)`),
+  - `LegacyRandomSource.java` (atomic LCG, `setSeed` resets the Gaussian),
+  - `SingleThreadedRandomSource.java` (plain-long LCG),
+  - `ThreadSafeLegacyRandomSource.java` (CAS-retry `next`, and `setSeed` does
+    **not** reset the Gaussian),
+  - `MarsagliaPolarGaussian.java`, `PositionalRandomFactory.java`,
+    `RandomSupport.java` (Stafford mix, 128-bit seed upgrade,
+    `seedFromHashOf`, `generateUniqueSeed`, nested `Seed128bit` record).
+- Filled the 8 `Mth` helpers that were previously documented as blocked:
+  `nextInt`, `nextFloat`, `nextDouble`, `createInsecureUUID`, `wobble`,
+  `randomBetweenInclusive`, `randomBetween`, `normal`.
+- `SOURCES` and the `VERIFIED` path list grew to 77 entries (1:1 with the
+  files on disk).
+- Extended `ShimParity.java` with 647 RNG values: draw sequences from 8 seeds
+  across every `next*` method and 11 bounds; `fork`/`forkPositional`
+  (`at`, `fromHashOf`, `fromSeed`, `parityConfigString`); the
+  `SingleThreadedRandomSource`/`ThreadSafeLegacyRandomSource` constructors;
+  Gaussian-cache behaviour across `setSeed`; `RandomSupport` mix/upgrade/hash;
+  and `Mth`'s random helpers.
+
+### Proof
+```
+python -u tools/fabric_shim_parity.py --report 40
+real lines: 5730   shim lines: 5730
+PARITY OK: 5730 values identical between the real jar and the shims
+
+cargo test -p horizon-jvm                    # 27 passed, 0 failed
+cargo clippy -p horizon-jvm --all-targets -- -D warnings   # clean
+cargo fmt -p horizon-jvm --check             # clean
+
+python tools/fabric_shim_coverage.py --jar .../26.1.2.jar
+PUBLIC/PROTECTED METHODS: 555/3618 = 15.3%
+PUBLIC/PROTECTED FIELDS:    60/639 = 9.4%
+
+python tools/check_public_tree.py            # passed
+python -m unittest tests.test_lab            # 16 passed
+```
+
+### Difference the oracle found (vanilla is not the obvious formula)
+- `RandomSource.triangle(min, max)` is `min + max * (nextDouble() - nextDouble())`
+  — it multiplies by `max`, not by `max - min`. The shim first used the
+  textbook interpolation and produced 16 mismatches; the real bytecode says
+  otherwise, so the shim now reproduces vanilla's arithmetic rather than
+  "fixing" it. The float overload has the same shape.
+
+### Deliberate, documented deviations
+- `RandomSource.createThreadLocalInstance()` seeds from the JDK's
+  `ThreadLocalRandom` instead of netty's `ThreadLocalRandom`. Both are
+  thread-local and the seed is never observable, so no sequence can depend on
+  it.
+- `LegacyRandomSource` reports concurrent use with a named
+  `IllegalStateException` instead of vanilla's
+  `ThreadingDetector.makeThreadingException` (that class is not ported yet).
+  Only reachable by misusing one instance from several threads.
+- `RandomSupport.seedFromHashOf` uses the JDK's MD5 over the UTF-8 bytes,
+  reading them as two big-endian longs, instead of Guava's `Hashing.md5` +
+  `Longs.fromBytes`. Same 16 bytes, same longs; the oracle confirms it.
+
+Did **not** prove: that a mod links or runs. This batch is still value-level
+parity. Known next gaps: `AABB` + `HitResult`/`BlockHitResult` (which also
+unblock `Mth.rayIntersectsAABB`), `Component`/`Style`, `BlockState`.
+
 ## 2026-11-06 — T-241 batch 1: bit-exact parity for the core value classes
 
 ### Change

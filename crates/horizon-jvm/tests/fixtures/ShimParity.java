@@ -1,12 +1,18 @@
 import java.util.EnumSet;
+import java.util.UUID;
 import java.util.function.IntPredicate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.levelgen.PositionalRandomFactory;
+import net.minecraft.world.level.levelgen.RandomSupport;
+import net.minecraft.world.level.levelgen.SingleThreadedRandomSource;
+import net.minecraft.world.level.levelgen.ThreadSafeLegacyRandomSource;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 
@@ -122,6 +128,7 @@ public final class ShimParity {
         mthWrap();
         mthLerp();
         mthBits();
+        rng();
         vectorMath();
         blockPos();
         chunkPos();
@@ -271,6 +278,131 @@ public final class ShimParity {
         pd("mth.vectorLerp.x", Mth.lerp(0.25, new Vec3(1.0, 2.0, 3.0), new Vec3(-4.5, 5.5, 6.25)).x);
         pd("mth.vectorLerp.y", Mth.lerp(0.25, new Vec3(1.0, 2.0, 3.0), new Vec3(-4.5, 5.5, 6.25)).y);
         pd("mth.vectorLerp.z", Mth.lerp(0.25, new Vec3(1.0, 2.0, 3.0), new Vec3(-4.5, 5.5, 6.25)).z);
+    }
+
+    private static final long[] RNG_SEEDS = {
+        0L, 1L, -1L, 42L, 123456789L, -987654321L, Long.MAX_VALUE, Long.MIN_VALUE,
+    };
+
+    private static final int[] RNG_BOUNDS = {
+        1, 2, 3, 7, 16, 17, 31, 32, 100, 1000, 123456789,
+    };
+
+    /**
+     * Random draws, in vanilla's order. A shim that gets the arithmetic right
+     * but consumes a different number of values diverges from the next draw
+     * onwards, which is what these sequences catch.
+     */
+    private static void rng() {
+        for (int s = 0; s < RNG_SEEDS.length; s++) {
+            RandomSource random = RandomSource.create(RNG_SEEDS[s]);
+            for (int i = 0; i < 6; i++) {
+                p("rng.nextInt." + s + "." + i, random.nextInt());
+            }
+            for (int b = 0; b < RNG_BOUNDS.length; b++) {
+                p("rng.nextIntBound." + s + "." + b, random.nextInt(RNG_BOUNDS[b]));
+            }
+            for (int i = 0; i < 3; i++) {
+                p("rng.nextLong." + s + "." + i, random.nextLong());
+                pf("rng.nextFloat." + s + "." + i, random.nextFloat());
+                pd("rng.nextDouble." + s + "." + i, random.nextDouble());
+                p("rng.nextBoolean." + s + "." + i, random.nextBoolean() ? 1 : 0);
+                pd("rng.nextGaussian." + s + "." + i, random.nextGaussian());
+            }
+            p("rng.between." + s, random.nextIntBetweenInclusive(-5, 5));
+            pf("rng.triangleF." + s, random.triangle(-2.5F, 7.5F));
+            pd("rng.triangleD." + s, random.triangle(1.5, 8.5));
+            random.consumeCount(3);
+            p("rng.afterConsume." + s, random.nextInt());
+            p("rng.origin." + s, random.nextInt(-10, 10));
+            safe("rng.originBad." + s, () -> Integer.toString(random.nextInt(5, 5)));
+            RandomSource fork = random.fork();
+            p("rng.fork." + s, fork.nextInt());
+            p("rng.forkOfFork." + s, fork.fork().nextInt());
+            random.setSeed(RNG_SEEDS[s]);
+            p("rng.reseed." + s, random.nextInt());
+        }
+
+        for (int s = 0; s < RNG_SEEDS.length; s++) {
+            RandomSource random = RandomSource.create(RNG_SEEDS[s]);
+            PositionalRandomFactory factory = random.forkPositional();
+            StringBuilder config = new StringBuilder();
+            factory.parityConfigString(config);
+            ps("rng.positional.config." + s, config.toString());
+            p("rng.positional.at." + s, factory.at(-7, 123, 4567).nextLong());
+            p("rng.positional.atPos." + s,
+                    factory.at(new BlockPos(1, -64, 30000000)).nextLong());
+            p("rng.positional.hash." + s,
+                    factory.fromHashOf("minecraft:overworld").nextLong());
+            p("rng.positional.id." + s,
+                    factory.fromHashOf(Identifier.parse("horizon:test")).nextLong());
+            p("rng.positional.seed." + s, factory.fromSeed(RNG_SEEDS[s]).nextLong());
+        }
+
+        for (int s = 0; s < RNG_SEEDS.length; s++) {
+            RandomSource local = RandomSource.createThreadLocalInstance(RNG_SEEDS[s]);
+            p("rng.local." + s, local.nextLong());
+            pd("rng.local.gauss." + s, local.nextGaussian());
+
+            RandomSource single = new SingleThreadedRandomSource(RNG_SEEDS[s]);
+            p("rng.single." + s, single.nextLong());
+
+            RandomSource threadSafe = new ThreadSafeLegacyRandomSource(RNG_SEEDS[s]);
+            p("rng.threadSafe." + s, threadSafe.nextLong());
+            pd("rng.threadSafe.gauss1." + s, threadSafe.nextGaussian());
+            // setSeed must not reset the cached Gaussian on this implementation.
+            threadSafe.setSeed(RNG_SEEDS[s]);
+            pd("rng.threadSafe.gauss2." + s, threadSafe.nextGaussian());
+
+            RandomSource legacy = RandomSource.create(RNG_SEEDS[s]);
+            pd("rng.legacy.gauss1." + s, legacy.nextGaussian());
+            // setSeed does reset it on LegacyRandomSource.
+            legacy.setSeed(RNG_SEEDS[s]);
+            pd("rng.legacy.gauss2." + s, legacy.nextGaussian());
+        }
+
+        for (int i = 0; i < RNG_SEEDS.length; i++) {
+            long value = RNG_SEEDS[i];
+            p("rng.mix." + i, RandomSupport.mixStafford13(value));
+            RandomSupport.Seed128bit mixed = RandomSupport.upgradeSeedTo128bit(value);
+            p("rng.upgrade.lo." + i, mixed.seedLo());
+            p("rng.upgrade.hi." + i, mixed.seedHi());
+            ps("rng.upgrade.text." + i, mixed.toString());
+            RandomSupport.Seed128bit raw = RandomSupport.upgradeSeedTo128bitUnmixed(value);
+            p("rng.upgradeRaw.lo." + i, raw.seedLo());
+            p("rng.upgradeRaw.hi." + i, raw.seedHi());
+            RandomSupport.Seed128bit combined = raw.xor(mixed).mixed();
+            p("rng.upgradeCombined.lo." + i, combined.seedLo());
+            p("rng.upgradeCombined.hi." + i, combined.seedHi());
+        }
+        String[] names = {"", "minecraft:overworld", "horizon:fabric", "a", "\u00fc\u00f1\u00ef\u00e7\u00f8d\u00e9", "0123456789abcdef"};
+        for (int i = 0; i < names.length; i++) {
+            RandomSupport.Seed128bit hash = RandomSupport.seedFromHashOf(names[i]);
+            p("rng.hash.lo." + i, hash.seedLo());
+            p("rng.hash.hi." + i, hash.seedHi());
+        }
+
+        for (int i = 0; i < DOUBLES.length; i++) {
+            pd("mth.wobble." + i, Mth.wobble(DOUBLES[i]));
+        }
+        for (int s = 0; s < RNG_SEEDS.length; s++) {
+            UUID uuid = Mth.createInsecureUUID(RandomSource.create(RNG_SEEDS[s]));
+            p("mth.uuid.msb." + s, uuid.getMostSignificantBits());
+            p("mth.uuid.lsb." + s, uuid.getLeastSignificantBits());
+            ps("mth.uuid.text." + s, uuid.toString());
+
+            RandomSource random = RandomSource.create(RNG_SEEDS[s]);
+            p("mth.nextInt." + s, Mth.nextInt(random, -7, 19));
+            p("mth.nextIntEqual." + s, Mth.nextInt(random, 9, 9));
+            p("mth.nextIntInverted." + s, Mth.nextInt(random, 19, -7));
+            pf("mth.nextFloat." + s, Mth.nextFloat(random, -2.5F, 7.5F));
+            pd("mth.nextDouble." + s, Mth.nextDouble(random, -2.5, 7.5));
+            p("mth.randomBetweenInclusive." + s, Mth.randomBetweenInclusive(random, -7, 19));
+            pf("mth.randomBetween." + s, Mth.randomBetween(random, -2.5F, 7.5F));
+            pf("mth.normal." + s, Mth.normal(random, 2.5F, 0.75F));
+        }
+        pf("mth.nextFloatEqual", Mth.nextFloat(RandomSource.create(0L), 4.5F, 4.5F));
+        pd("mth.nextDoubleEqual", Mth.nextDouble(RandomSource.create(0L), 4.5, 4.5));
     }
 
     private static void vectorMath() {

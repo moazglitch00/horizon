@@ -11,8 +11,8 @@
 - **Dual mod discovery**: `horizon-mods::dual::scan` finds both `.hmod` and `.jar` in one directory.
 - **Cross-format validation**: `horizon-mods::validate` checks duplicate IDs and conflicts.
 - **Entrypoint invocation**: `invoke_entrypoint` loads a class out of its own jar, instantiates it and calls `onInitialize()`. Verified for our own fixture only.
-- **`net.minecraft` compatibility layer**: 52 shims, every path exists in a real `26.1.2.jar`. The core value classes (`Mth`, `Vec2`, `Vec3`, `Vec3i`, `BlockPos`, `ChunkPos`, `Identifier`, `Direction`, `Rotation`) are **bit-exact** against it: `tools/fabric_shim_parity.py` reports 5,083/5,083 identical values.
-- **Member coverage tooling**: `tools/fabric_shim_coverage.py` measures declared public/protected members against a real jar. Currently **13.7%** of methods (487/3558) and **8.5%** of fields (54/633).
+- **`net.minecraft` compatibility layer**: 60 shims, every path exists in a real `26.1.2.jar`. The core value classes (`Mth`, `Vec2`, `Vec3`, `Vec3i`, `BlockPos`, `ChunkPos`, `Identifier`, `Direction`, `Rotation`) and the RNG cluster (`RandomSource`, `BitRandomSource`, the three legacy sources, `MarsagliaPolarGaussian`, `PositionalRandomFactory`, `RandomSupport`) are **bit-exact** against it: `tools/fabric_shim_parity.py` reports 5,730/5,730 identical values.
+- **Member coverage tooling**: `tools/fabric_shim_coverage.py` measures declared public/protected members against a real jar. Currently **15.3%** of methods (555/3618) and **9.4%** of fields (60/639).
 
 ### Not working
 
@@ -20,7 +20,7 @@
 - **Mixin application**: no bytecode transformation is performed.
 - **Fabric API events**: registration stores nothing and no invoker fires.
 - **Gameplay bridge**: no `net.minecraft` call reaches the Rust engine's world state.
-- **Member completeness**: ~86% of public methods called by real mods are absent, so most mods would fail to link with `NoSuchMethodError`.
+- **Member completeness**: ~85% of public methods called by real mods are absent, so most mods would fail to link with `NoSuchMethodError`.
 - **In-process JNI**: the architecture uses a supervised child-process JVM, not JNI, so a mod crash cannot kill the game. This is a deliberate design decision.
 
 ### Key files
@@ -41,7 +41,7 @@
 
 ### Missing components for Java mod execution
 
-1. The remaining ~86% of `net.minecraft` members, and the Fabric API surface real mods call (T-241/T-242).
+1. The remaining ~85% of `net.minecraft` members, and the Fabric API surface real mods call (T-241/T-242).
 2. A Mixin engine (`@Inject`/`@Shadow`/`@Redirect`), Phase 5.
 3. Fabric API event dispatch wired to game events.
 4. A gameplay bridge (Java `Level`/`Entity` calls serviced by Rust), Phase 6.
@@ -52,7 +52,7 @@
 
 The foundation (discovery, version resolution, the framed host, entrypoints, and a
 bit-exact core shim set) is solid and tested. A real Java mod still does **not**
-run in Horizon: member coverage is 13.7%, Mixin is 0%, Fabric API dispatch is 0%,
+run in Horizon: member coverage is 15.3%, Mixin is 0%, Fabric API dispatch is 0%,
 and the gameplay bridge is 0%. The largest remaining phases are T-241 (members),
 Phase 5 (Mixin) and Phase 6 (gameplay bridge), and they need the 26.3 runtime for
 final verification.

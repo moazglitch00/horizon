@@ -57,7 +57,7 @@ exercised by a mod, so its fidelity is unproven.
 | fabric-screen-api-v1 | PLANNED | |
 | fabric-biome-api-v1 | PLANNED | |
 
-## Minecraft Java API — 52 shims
+## Minecraft Java API — 60 shims
 
 All rows are **SHIM** unless noted: they compile with `javac --release 21` into
 the host and have a smoke check, but no mod has loaded them. The T-202 audit
@@ -68,31 +68,38 @@ T-214 removed the silent fakes.
 `class_*` entries), so 26.x mods reference these official names directly.
 Intermediary remapping only applies to ≤1.21 mods (T-230, deferred).
 
-**Path conformance (measured against `26.1.2.jar`):** **52/52**. T-240 renamed
+**Path conformance (measured against `26.1.2.jar`):** **60/60**. T-240 renamed
 the 8 Yarn/older paths (`client.MinecraftClient`→`client.Minecraft`,
 `util.Identifier`+`resources.ResourceLocation`→`resources.Identifier`,
 `world.entity.player.PlayerEntity`→`...Player`,
 `world.level.ClientWorld`→`client.multiplayer.ClientLevel`,
 `world.level.ServerWorld`→`server.level.ServerLevel`,
 `attributes.Attribute`→`world.entity.ai.attributes.Attribute`; `network.chat.Text`
-was deleted). `shim_paths_match_the_verified_26x_set` guards the set.
+was deleted). T-241 added the RNG cluster (`RandomSource`,
+`world.level.levelgen.*`). `shim_paths_match_the_verified_26x_set` guards the set.
 
 **Member conformance (measured with `tools/fabric_shim_coverage.py`):**
-**13.7%** of public/protected methods (487/3558) and **8.5%** of fields (54/633).
+**15.3%** of public/protected methods (555/3618) and **9.4%** of fields (60/639).
 This, not the path count, is the linking gap: mods call members, and a missing
 one is `NoSuchMethodError`.
 
 **Differential parity (measured with `tools/fabric_shim_parity.py`):** the
 fixture runs the same source against the real `26.1.2.jar` and against the
-shims; **5,083/5,083 values are bit-identical** for `Mth`, `Vec2`, `Vec3`,
-`Vec3i`, `BlockPos`, `ChunkPos`, `Identifier`, `Direction` and `Rotation`. This
-proves *those members* behave like vanilla; it does not prove the other 86% of
-members exist or behave.
+shims; **5,730/5,730 values are bit-identical** for `Mth`, `Vec2`, `Vec3`,
+`Vec3i`, `BlockPos`, `ChunkPos`, `Identifier`, `Direction`, `Rotation` and the
+RNG cluster (`RandomSource`, `BitRandomSource`, `LegacyRandomSource`,
+`SingleThreadedRandomSource`, `ThreadSafeLegacyRandomSource`,
+`MarsagliaPolarGaussian`, `PositionalRandomFactory`, `RandomSupport`). This
+proves *those members* behave like vanilla; it does not prove the other ~85%
+of members exist or behave. The oracle caught one vanilla quirk worth
+naming: `RandomSource.triangle` multiplies the random difference by `max`,
+not by `max - min`.
 
 | Package | Classes |
 |---|---|
 | `net.minecraft` | `IdentifierException` |
-| `net.minecraft.util` | `Mth` |
+| `net.minecraft.util` | `Mth`, `RandomSource` |
+| `net.minecraft.world.level.levelgen` | `BitRandomSource`, `LegacyRandomSource`, `SingleThreadedRandomSource`, `ThreadSafeLegacyRandomSource`, `MarsagliaPolarGaussian`, `PositionalRandomFactory`, `RandomSupport` |
 | `net.minecraft.resources` | `Identifier` |
 | `net.minecraft.core` | `BlockPos`, `Direction`, `Position`, `Registry`, `Vec3i`, `particles.ParticleType`, `particles.SimpleParticleType` |
 | `net.minecraft.sounds` | `SoundEvent` |

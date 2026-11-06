@@ -300,6 +300,52 @@ pub const SOURCES: &[(&str, &str)] = &[
         ),
     ),
     (
+        "net/minecraft/util/RandomSource.java",
+        include_str!("../../../java/horizon-host/src/net/minecraft/util/RandomSource.java"),
+    ),
+    (
+        "net/minecraft/world/level/levelgen/BitRandomSource.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/levelgen/BitRandomSource.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/levelgen/LegacyRandomSource.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/levelgen/LegacyRandomSource.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/levelgen/MarsagliaPolarGaussian.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/levelgen/MarsagliaPolarGaussian.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/levelgen/PositionalRandomFactory.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/levelgen/PositionalRandomFactory.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/levelgen/RandomSupport.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/levelgen/RandomSupport.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/levelgen/SingleThreadedRandomSource.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/levelgen/SingleThreadedRandomSource.java"
+        ),
+    ),
+    (
+        "net/minecraft/world/level/levelgen/ThreadSafeLegacyRandomSource.java",
+        include_str!(
+            "../../../java/horizon-host/src/net/minecraft/world/level/levelgen/ThreadSafeLegacyRandomSource.java"
+        ),
+    ),
+    (
         "net/minecraft/core/particles/SimpleParticleType.java",
         include_str!(
             "../../../java/horizon-host/src/net/minecraft/core/particles/SimpleParticleType.java"

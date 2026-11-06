@@ -1,5 +1,6 @@
 package net.minecraft.util;
 
+import java.util.UUID;
 import java.util.function.IntPredicate;
 import net.minecraft.core.Vec3i;
 import net.minecraft.world.phys.Vec3;
@@ -17,11 +18,10 @@ import net.minecraft.world.phys.Vec3;
  * {@code tools/fabric_shim_parity.py} (same inputs, bit-exact output).
  *
  * <p>Not ported here because they need shims this layer does not have yet, and
- * a stub would be a lie: {@code nextInt/nextFloat/nextDouble/normal/
- * randomBetween/randomBetweenInclusive/createInsecureUUID/wobble} (RandomSource),
- * {@code rayIntersectsAABB} (AABB), {@code rotationAroundAxis} (joml),
- * {@code mulAndTruncate} (commons-lang3), {@code outFromOrigin} (streams), and
- * the joml axis constants {@code X_AXIS/Y_AXIS/Z_AXIS}.
+ * a stub would be a lie: {@code rayIntersectsAABB} (AABB),
+ * {@code rotationAroundAxis} (joml), {@code mulAndTruncate} (commons-lang3),
+ * {@code outFromOrigin} (streams), and the joml axis constants
+ * {@code X_AXIS/Y_AXIS/Z_AXIS}.
  */
 public class Mth {
     public static final float PI = 3.1415927F;
@@ -631,5 +631,40 @@ public class Mth {
 
     public static int quantize(double value, int step) {
         return floor(value / (double) step) * step;
+    }
+
+    public static int nextInt(RandomSource random, int min, int max) {
+        return min >= max ? min : random.nextInt(max - min + 1) + min;
+    }
+
+    public static float nextFloat(RandomSource random, float min, float max) {
+        return min >= max ? min : random.nextFloat() * (max - min) + min;
+    }
+
+    public static double nextDouble(RandomSource random, double min, double max) {
+        return min >= max ? min : random.nextDouble() * (max - min) + min;
+    }
+
+    public static UUID createInsecureUUID(RandomSource random) {
+        long l = random.nextLong() & -61441L | 16384L;
+        long m = random.nextLong() & 4611686018427387903L | Long.MIN_VALUE;
+        return new UUID(l, m);
+    }
+
+    public static double wobble(double value) {
+        return value + (RandomSource.createThreadLocalInstance((long) floor(value * 3000.0)).nextDouble() * 2.0 - 1.0)
+            * 1.0E-7 / 2.0;
+    }
+
+    public static int randomBetweenInclusive(RandomSource random, int min, int max) {
+        return random.nextInt(max - min + 1) + min;
+    }
+
+    public static float randomBetween(RandomSource random, float min, float max) {
+        return random.nextFloat() * (max - min) + min;
+    }
+
+    public static float normal(RandomSource random, float mean, float deviation) {
+        return mean + (float) random.nextGaussian() * deviation;
     }
 }
