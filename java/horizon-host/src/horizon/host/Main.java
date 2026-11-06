@@ -10,9 +10,9 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.ArrayList;
 
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
@@ -29,6 +29,9 @@ import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
  */
 public final class Main {
     public static final String HOST_VERSION = "0.1.0";
+
+    private static final Map<String, Class<?>> loadedClasses = new HashMap<>();
+    private static final Map<String, java.net.URLClassLoader> loadedClassLoaders = new HashMap<>();
 
     public static void main(String[] args) {
         PrintStream frames;
@@ -99,16 +102,6 @@ public final class Main {
             propsField.setAccessible(true);
             propsField.set(launcher, new java.util.Properties());
 
-            // Initialise Mixin so that bytecode transformations can be applied
-            // when classes are loaded via the LOAD_CLASS frame.
-            org.spongepowered.asm.launch.MixinBootstrap.init();
-
-            // Register the testmod mixin config for development testing.
-            // In production, the host would scan mod jars for mixin configs.
-            org.spongepowered.asm.mixin.Mixins.addConfiguration("mixins.testmod.json");
-
-            org.spongepowered.asm.mixin.MixinEnvironment.init(
-                    org.spongepowered.asm.mixin.MixinEnvironment.Phase.DEFAULT);
 
             while (true) {
                 Wire.Frame frame = wire.read();
@@ -145,12 +138,15 @@ public final class Main {
                         if (loadClass.jarPath().isEmpty()) {
                             // System class - just load it normally
                             Class<?> clazz = Class.forName(loadClass.className());
+                            loadedClasses.put(loadClass.className(), clazz);
                             System.err.println("horizon host: loaded " + clazz.getName());
                             wire.write(new Wire.ClassLoaded(clazz.getName()));
                             continue;
                         } else {
                             java.net.URL[] urls = { Paths.get(loadClass.jarPath()).toUri().toURL() };
-                            loader = new java.net.URLClassLoader(urls, ClassLoader.getSystemClassLoader());
+                            String jarKey = loadClass.jarPath();
+                            loader = loadedClassLoaders.computeIfAbsent(jarKey,
+                                    key -> new java.net.URLClassLoader(urls, ClassLoader.getSystemClassLoader()));
 
                             // Read raw class bytes from the jar so we can run Mixin transformations
                             String classPath = loadClass.className().replace('.', '/') + ".class";
@@ -169,6 +165,7 @@ public final class Main {
                         // Define the class with (possibly transformed) bytes
                         Class<?> clazz = defineClassViaReflection(
                                 loader, loadClass.className(), classBytes);
+                        loadedClasses.put(loadClass.className(), clazz);
                         System.err.println("horizon host: loaded " + clazz.getName());
                         wire.write(new Wire.ClassLoaded(clazz.getName()));
                     } catch (Throwable t) {
@@ -177,7 +174,11 @@ public final class Main {
                     }
                 } else if (frame instanceof Wire.InvokeMethod invokeMethod) {
                     try {
-                        Class<?> clazz = Class.forName(invokeMethod.className());
+                        Class<?> clazz = loadedClasses.get(invokeMethod.className());
+                        if (clazz == null) {
+                            clazz = Class.forName(invokeMethod.className());
+                            loadedClasses.put(invokeMethod.className(), clazz);
+                        }
                         java.lang.reflect.Method method = clazz.getMethod(invokeMethod.methodName());
                         Object instance = clazz.getDeclaredConstructor().newInstance();
                         Object result = method.invoke(instance);

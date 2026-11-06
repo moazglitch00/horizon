@@ -1,6 +1,7 @@
 package horizon.host;
 
 import java.io.File;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,6 +27,16 @@ import net.fabricmc.loader.impl.launch.FabricLauncherBase;
 import net.fabricmc.loader.impl.metadata.DependencyOverrides;
 import net.fabricmc.loader.impl.metadata.LoaderModMetadata;
 import net.fabricmc.loader.impl.metadata.VersionOverrides;
+import org.spongepowered.asm.launch.MixinBootstrap;
+import org.spongepowered.asm.mixin.MixinEnvironment;
+
+import java.io.File;
+import java.lang.reflect.Method;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.Enumeration;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 /**
  * Runs Fabric Loader's own discovery and resolution over a mods folder and returns its verdict as
@@ -58,9 +69,6 @@ public final class Discovery {
                     warnings, start);
         }
 
-        HeadlessLauncher launcher = new HeadlessLauncher(environment, gameDir, classPath());
-        FabricLauncherBase.setLauncher(launcher);
-
         FabricLoaderImpl loader = FabricLoaderImpl.INSTANCE;
         loader.setGameProvider(new HorizonGameProvider(gameDir, gameVersion, List.of()));
 
@@ -88,10 +96,21 @@ public final class Discovery {
             errors.add(cap(e.getMessage()));
         }
 
+        // Add mod jar paths to the system classloader BEFORE loader.load(),
+        // so that Mixin's service classloader can resolve mixin config
+        // resources (mixins.*.json) and mixin classes when FabricLoader
+        // bootstraps Mixin during load().
+        addModJarsToSystemClassLoader(candidates, modsDir);
+
         // Initialize all mods: Fabric Loader loads classes, applies Mixin
         // transformations, and invokes entrypoints. This must be called before
         // any mod code can run.
         loader.load();
+
+        // Initialise Mixin: scan mod jars for mixin configs, register them,
+        // then initialise the Mixin environment so that bytecode transformations
+        // can be applied when classes are loaded via LOAD_CLASS.
+        initialiseMixinEnvironment();
 
         List<String> disabled = new ArrayList<>();
         for (Set<ModCandidateImpl> set : environmentDisabled.values()) {
@@ -352,6 +371,94 @@ public final class Discovery {
         }
 
         return value.length() <= MAX_MESSAGE ? value : value.substring(0, MAX_MESSAGE) + "…";
+    }
+
+    /**
+     * Add all discovered mod jar paths (plus any jars in the mods directory that
+     * Fabric Loader didn't recognise as Fabric mods) to the system classloader.
+     *
+     * <p>This must happen before {@link FabricLoaderImpl#load()} so that Mixin's
+     * service classloader can resolve mixin config resources
+     * ({@code mixins.*.json}) and mixin classes from mod jars.
+     */
+    private static void addModJarsToSystemClassLoader(
+            List<ModCandidateImpl> mods, Path modsDir) throws Exception {
+        List<Path> modJars = new ArrayList<>();
+        for (ModCandidateImpl candidate : mods) {
+            try {
+                List<Path> paths = candidate.getPaths();
+                if (paths != null) {
+                    modJars.addAll(paths);
+                }
+            } catch (IllegalStateException e) {
+                // Builtin mods (fabricloader, java, minecraft) don't have paths
+            }
+        }
+
+        // ALSO scan the mods directory directly for jars that Fabric Loader
+        // may not recognise as Fabric mods (e.g. pure mixin-only mods without
+        // fabric.mod.json).
+        if (Files.isDirectory(modsDir)) {
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(modsDir, "*.jar")) {
+                for (Path jar : stream) {
+                    if (!modJars.contains(jar)) {
+                        modJars.add(jar);
+                    }
+                }
+            }
+        }
+
+        ClassLoader systemCL = ClassLoader.getSystemClassLoader();
+        if (systemCL instanceof URLClassLoader urlCL) {
+            Method addURL = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
+            addURL.setAccessible(true);
+            for (Path jar : modJars) {
+                if (Files.isRegularFile(jar) && jar.toString().endsWith(".jar")) {
+                    addURL.invoke(urlCL, jar.toUri().toURL());
+                }
+            }
+        }
+
+        // Also set the thread context classloader to include mod jars, so that
+        // Mixin's MixinEnvironment can find config files and mixin classes.
+        ClassLoader modCL = new URLClassLoader(
+                modJars.stream()
+                        .filter(p -> Files.isRegularFile(p) && p.toString().endsWith(".jar"))
+                        .map(p -> {
+                            try { return p.toUri().toURL(); } catch (Exception e) { return null; }
+                        })
+                        .filter(u -> u != null)
+                        .toArray(URL[]::new),
+                ClassLoader.getSystemClassLoader());
+        Thread.currentThread().setContextClassLoader(modCL);
+    }
+
+    /**
+     * Initialise the Mixin environment so that
+     * {@link org.spongepowered.asm.mixin.transformer.IMixinTransformer#transformClassBytes}
+     * works when classes are loaded via {@link Main#loadClass}.
+     *
+     * <p>Mixin configuration registration is handled by Fabric Loader itself
+     * during {@link FabricLoaderImpl#load()} — it reads each mod's
+     * {@code fabric.mod.json} and registers the declared mixin configs via
+     * {@code FabricMixinBootstrap.init()}. This method only ensures the
+     * environment is initialised.
+     */
+    private static void initialiseMixinEnvironment() throws Exception {
+        MixinBootstrap.init();
+        try {
+            MixinEnvironment.init(MixinEnvironment.Phase.DEFAULT);
+        } catch (Throwable t) {
+            try {
+                if (MixinEnvironment.getDefaultEnvironment() == null) {
+                    throw t;
+                }
+            } catch (Throwable ignored) {
+                throw t;
+            }
+            System.err.println("horizon host: Mixin environment was already initialised");
+        }
+        System.err.println("horizon host: Mixin environment initialised");
     }
 
     private static <T> Collection<T> nullToEmpty(Collection<T> value) {
