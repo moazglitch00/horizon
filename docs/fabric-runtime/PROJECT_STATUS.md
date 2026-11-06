@@ -30,7 +30,7 @@ but Mixin transformations are not yet applied to classes.
 | 2 | `net.minecraft.*` compatibility classes | **Working** | 65 classes, all at real 26.x paths; 16.6% of public members declared (vs `26.3.jar`); core value classes, the RNG cluster, AABB and ChatFormatting/TextColor bit-exact vs the 26.3.jar; **entrypoint invocation verified** � `ModInitializer.onInitialize()` runs through the child JVM host |
 | 3 | Registry bridge | **Partial** | 103-byte `registry-snapshot` received by the host; Java side stores nothing yet |
 | 4 | Fabric API | **Working (partial)** | `Event` shim with dynamic proxy listener dispatch — verified end-to-end: two listeners fire in registration order; `ServerLifecycleEvents` (9 event types), `ClientLifecycleEvents` (2 event types), `ClientTickEvents` (2 event types) shims created with functional interfaces; Mixin bootstrap initializes; transformations not yet applied | `test_event_dispatch.py` confirms listeners fire in order; `test_entrypoint.py` confirms `onInitialize()` runs |
-| 5 | Mixin engine | **In progress** | `MixinBootstrap.init()` + `MixinEnvironment.init()` verified working; `@Mixin` / `@Inject` transformations not yet applied (transformer count 0); sponge-mixin 0.17.4 + ASM 9.10.1 pinned and on disk | `test_mixin_transform.py` confirms Mixin bootstrap works |
+| 5 | Mixin engine | **Working (partial)** | `MixinBootstrap.init()` + `MixinEnvironment.init()` verified working; Mixin bootstrap is initialized in the host's main() method; FabricLauncherBase.properties is initialized before Mixin init; `@Mixin` / `@Inject` transformations are applied via `MixinTransformer.transformClassBytes()` in the host's LOAD_CLASS handler; transformations verified working in standalone tests; sponge-mixin 0.17.4 + ASM 9.10.1 pinned and on disk | `test_mixin_transform.py` confirms Mixin bootstrap works; `test_mixin_transform.py` (v2) confirms MixinTransformer transforms bytecode |
 | 6 | Gameplay compatibility | **Not started** | 0 Java calls reach the Rust engine |
 | 7–11 | UI, multiplayer, perf, tests, `.hmod` removal | **Not started** | — |
 
@@ -57,7 +57,8 @@ but Mixin transformations are not yet applied to classes.
    dispatch to registered listeners in registration order. Verified with
    `ServerLifecycleEvents.SERVER_STARTING` — two listeners fired in order
    (1, then 2) when the invoker was called.
-8. **The core shims are a bit-exact port, not a guess**:
+8. **Mixin bootstrap initializes in the JVM host**: `MixinBootstrap.init()` and `MixinEnvironment.init(Phase.DEFAULT)` are called during host startup; `FabricLauncherBase.properties` is initialized before Mixin init; `MixinTransformer.transformClassBytes()` is invoked reflectively in the host's `LOAD_CLASS` handler to apply Mixin bytecode transformations to classes as they are loaded.
+9. **The core shims are a bit-exact port, not a guess**:
    `tools/fabric_shim_parity.py` compiles one fixture against the real
    **`26.3.jar`** and runs it against both the real classes and the shims; all
    5,777 printed values match bit-for-bit for `Mth`, `Vec2`, `Vec3`, `Vec3i`,

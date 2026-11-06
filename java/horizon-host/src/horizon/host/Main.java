@@ -3,12 +3,19 @@ package horizon.host;
 import java.io.BufferedOutputStream;
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ArrayList;
+
+import org.spongepowered.asm.mixin.MixinEnvironment;
+import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
 
 /**
  * The Horizon Java host: a child process the Rust engine starts when a player has Fabric mods.
@@ -71,6 +78,38 @@ public final class Main {
             System.err.println("horizon host " + HOST_VERSION + ": ready (loader "
                     + Discovery.loaderVersion() + ", Java " + Runtime.version().feature() + ")");
 
+            // Initialise FabricLauncherBase.properties so that MixinBootstrap can
+            // read system properties. HeadlessLauncher does not set this field.
+            Class<?> launcherBaseClass = Class.forName(
+                    "net.fabricmc.loader.impl.launch.FabricLauncherBase");
+            Field launcherField = launcherBaseClass.getDeclaredField("launcher");
+            launcherField.setAccessible(true);
+            Object launcher = launcherField.get(null);
+            if (launcher == null) {
+                launcher = new HeadlessLauncher(
+                        net.fabricmc.api.EnvType.CLIENT,
+                        Paths.get("."),
+                        new ArrayList<>());
+                launcherBaseClass.getMethod("setLauncher",
+                        Class.forName("net.fabricmc.loader.impl.launch.FabricLauncher"))
+                        .invoke(null, launcher);
+                launcher = launcherField.get(null);
+            }
+            Field propsField = launcherBaseClass.getDeclaredField("properties");
+            propsField.setAccessible(true);
+            propsField.set(launcher, new java.util.Properties());
+
+            // Initialise Mixin so that bytecode transformations can be applied
+            // when classes are loaded via the LOAD_CLASS frame.
+            org.spongepowered.asm.launch.MixinBootstrap.init();
+
+            // Register the testmod mixin config for development testing.
+            // In production, the host would scan mod jars for mixin configs.
+            org.spongepowered.asm.mixin.Mixins.addConfiguration("mixins.testmod.json");
+
+            org.spongepowered.asm.mixin.MixinEnvironment.init(
+                    org.spongepowered.asm.mixin.MixinEnvironment.Phase.DEFAULT);
+
             while (true) {
                 Wire.Frame frame = wire.read();
 
@@ -100,14 +139,36 @@ public final class Main {
                 } else if (frame instanceof Wire.LoadClass loadClass) {
                     try {
                         System.err.println("horizon host: loading class " + loadClass.className());
+
+                        byte[] classBytes;
                         ClassLoader loader;
                         if (loadClass.jarPath().isEmpty()) {
-                            loader = Main.class.getClassLoader();
+                            // System class - just load it normally
+                            Class<?> clazz = Class.forName(loadClass.className());
+                            System.err.println("horizon host: loaded " + clazz.getName());
+                            wire.write(new Wire.ClassLoaded(clazz.getName()));
+                            continue;
                         } else {
-                            java.net.URL[] urls = { new java.io.File(loadClass.jarPath()).toURI().toURL() };
+                            java.net.URL[] urls = { Paths.get(loadClass.jarPath()).toUri().toURL() };
                             loader = new java.net.URLClassLoader(urls, ClassLoader.getSystemClassLoader());
+
+                            // Read raw class bytes from the jar so we can run Mixin transformations
+                            String classPath = loadClass.className().replace('.', '/') + ".class";
+                            try (InputStream is = loader.getResourceAsStream(classPath)) {
+                                if (is == null) {
+                                    throw new java.io.FileNotFoundException(
+                                            "Class not found in jar: " + classPath);
+                                }
+                                classBytes = is.readAllBytes();
+                            }
                         }
-                        Class<?> clazz = Class.forName(loadClass.className(), true, loader);
+
+                        // Apply Mixin bytecode transformations if Mixin is initialized
+                        classBytes = applyMixinTransformations(loadClass.className(), classBytes);
+
+                        // Define the class with (possibly transformed) bytes
+                        Class<?> clazz = defineClassViaReflection(
+                                loader, loadClass.className(), classBytes);
                         System.err.println("horizon host: loaded " + clazz.getName());
                         wire.write(new Wire.ClassLoaded(clazz.getName()));
                     } catch (Throwable t) {
@@ -118,7 +179,8 @@ public final class Main {
                     try {
                         Class<?> clazz = Class.forName(invokeMethod.className());
                         java.lang.reflect.Method method = clazz.getMethod(invokeMethod.methodName());
-                        Object result = method.invoke(null);
+                        Object instance = clazz.getDeclaredConstructor().newInstance();
+                        Object result = method.invoke(instance);
                         wire.write(new Wire.InvokeResult(
                                 result == null ? "null" : result.toString()));
                     } catch (Throwable t) {
@@ -165,6 +227,56 @@ public final class Main {
         wire.write(new Wire.DiscoverResult(json));
         System.err.println("horizon host: discovery answered in "
                 + (System.nanoTime() - start) / 1_000_000 + " ms");
+    }
+
+    /**
+     * Apply Mixin bytecode transformations to a class if Mixin is initialized.
+     *
+     * <p>Reads Mixin's internal {@link IMixinTransformer} via reflection and runs
+     * the class bytes through it. Returns the original bytes unchanged if Mixin
+     * is not yet initialised or the transformer cannot be found.
+     */
+    private static byte[] applyMixinTransformations(String className, byte[] bytes) {
+        try {
+            Class<?> envClass = Class.forName(
+                    "org.spongepowered.asm.mixin.MixinEnvironment");
+            Object env = envClass.getMethod("getDefaultEnvironment").invoke(null);
+            if (env == null) {
+                return bytes;
+            }
+
+            // MixinEnvironment has a private static IMixinTransformer field.
+            Field transformerField = envClass.getDeclaredField("transformer");
+            transformerField.setAccessible(true);
+            Object transformer = transformerField.get(null);
+            if (transformer == null) {
+                return bytes;
+            }
+
+            IMixinTransformer mixinTransformer =
+                    (IMixinTransformer) transformer;
+            byte[] transformed = mixinTransformer.transformClassBytes(
+                    "horizon-host", className, bytes);
+            if (transformed != bytes && transformed.length != bytes.length) {
+                System.err.println("horizon host: Mixin transformed "
+                        + className + " (" + bytes.length + " -> "
+                        + transformed.length + " bytes)");
+            }
+            return transformed;
+        } catch (Throwable t) {
+            // Mixin not yet initialised or transformation failed - use raw bytes
+            System.err.println("horizon host: Mixin transform skipped for "
+                    + className + ": " + t.getMessage());
+            return bytes;
+        }
+    }
+
+    private static Class<?> defineClassViaReflection(ClassLoader loader,
+            String className, byte[] bytes) throws Exception {
+        Method defineClass = ClassLoader.class.getDeclaredMethod(
+                "defineClass", String.class, byte[].class, int.class, int.class);
+        defineClass.setAccessible(true);
+        return (Class<?>) defineClass.invoke(loader, className, bytes, 0, bytes.length);
     }
 
     private static Map<String, String> parse(String[] args) {

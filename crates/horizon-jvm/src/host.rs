@@ -696,6 +696,7 @@ impl JavaHost {
 
         let mut command = Command::new(&config.java);
         command
+            .arg("--add-opens=java.base/java.lang=ALL-UNNAMED")
             .arg("-cp")
             .arg(horizon_prepare::java::classpath(
                 classpath.iter().map(|p| p.as_path()),

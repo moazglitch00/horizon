@@ -279,7 +279,18 @@ fn a_mod_entrypoint_runs_from_its_jar() {
         .join(".local")
         .join("fabric-libs")
         .join("asm-9.10.1.jar");
-    let host_cp = format!("{};{}", loader_jar.display(), asm_jar.display());
+    let mixin_jar = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join(".local")
+        .join("fabric-libs")
+        .join("sponge-mixin-0.17.4+mixin.0.8.7.jar");
+    let host_cp = format!(
+        "{};{};{}",
+        loader_jar.display(),
+        asm_jar.display(),
+        mixin_jar.display()
+    );
 
     let host_sources = [
         java_src.join("horizon").join("host").join("Discovery.java"),

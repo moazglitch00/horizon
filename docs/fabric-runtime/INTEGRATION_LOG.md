@@ -3,6 +3,44 @@
 Newest first. Each entry is a verified integration checkpoint: what changed,
 what proved it, and what it did **not** prove.
 
+# Fabric Runtime: Integration Log
+
+Newest first. Each entry is a verified integration checkpoint: what changed,
+what proved it, and what it did **not** prove.
+
+---
+
+## 2026-11-06 — T-220: Mixin engine integration into JVM host
+
+### Change
+- `MixinBootstrap.init()` and `MixinEnvironment.init(Phase.DEFAULT)` are now called during the JVM host's `main()` startup, so Mixin is initialized before any mods are loaded.
+- `FabricLauncherBase.properties` is initialized (via reflection) before `MixinBootstrap.init()`, fixing a `NullPointerException` in `MixinBootstrap.start()`.
+- `MixinTransformer.transformClassBytes()` is invoked reflectively in the host's `LOAD_CLASS` handler (`Main.java`), applying Mixin bytecode transformations to classes as they are loaded from mod jars.
+- `ClassLoader.defineClass()` is invoked reflectively (via `Method.setAccessible(true)`) to define classes with Mixin-transformed bytecode.
+- `--add-opens java.base/java.lang=ALL-UNNAMED` is added to the JVM command line to allow reflective access to `ClassLoader.defineClass()`.
+
+### Proof
+```
+cargo test -p horizon-jvm --test host
+test result: ok. 10 passed; 0 failed
+
+python test_mixin_transform.py   # MixinBootstrap.init() + MixinEnvironment.init() verified
+python test_mixin_transform_v2.py # MixinTransformer.transformClassBytes() transforms bytecode
+python test_mixin_through_host.py # LOAD_CLASS + INVOKE_METHOD through the host pipe
+
+cargo test -p horizon-jvm --lib   # 6 passed
+cargo clippy -p horizon-jvm --all-targets -- -D warnings   # clean
+cargo fmt -p horizon-jvm --check   # clean
+python tools/check_public_tree.py   # passed
+python -m unittest tests.test_lab   # 16 passed
+python tools/fabric_shim_parity.py --jar .../26.3.jar   # 5,777/5,777 bit-identical
+```
+
+### Deliberate, documented gaps
+- Mixin transformations of real Minecraft classes (e.g., `net.minecraft.world.level.block.Block`) have not been verified end-to-end through the host. The `transformClassBytes()` call is wired up, but Mixin's config discovery may not find mixins in mod jars due to class loader configuration.
+- `@Inject`, `@Redirect`, `@Shadow`, `@Overwrite`, `@Accessor`, `@Invoker` annotations have not been tested with real Minecraft classes.
+- `MixinEnvironment.getTransformers()` returns the `MixinTransformer`, but `MixinTransformer.transformClassBytes()` may not find mixins for a given class if the mixin config's mixin classes can't be loaded by Mixin's class loader.
+
 ---
 
 ## 2026-11-06 — T-211/T-212/T-242: Fabric API event dispatch end-to-end; entrypoint runs through Fabric Loader
