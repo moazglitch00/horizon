@@ -398,14 +398,18 @@ public final class Discovery {
         // ALSO scan the mods directory directly for jars that Fabric Loader
         // may not recognise as Fabric mods (e.g. pure mixin-only mods without
         // fabric.mod.json).
+        System.err.println("horizon host: scanning mods dir " + modsDir + " for jars");
         if (Files.isDirectory(modsDir)) {
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(modsDir, "*.jar")) {
                 for (Path jar : stream) {
+                    System.err.println("horizon host: found jar in mods dir: " + jar);
                     if (!modJars.contains(jar)) {
                         modJars.add(jar);
                     }
                 }
             }
+        } else {
+            System.err.println("horizon host: mods dir does not exist: " + modsDir);
         }
 
         ClassLoader systemCL = ClassLoader.getSystemClassLoader();
