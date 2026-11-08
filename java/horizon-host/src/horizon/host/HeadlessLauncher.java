@@ -2,7 +2,11 @@ package horizon.host;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -31,15 +35,62 @@ public final class HeadlessLauncher extends FabricLauncherBase {
     private final EnvType environment;
     private final Path gameDir;
     private final List<Path> classPath;
-    private final ClassLoader target;
+    /**
+     * The loader Mixin resolves resources and mixin classes through
+     * ({@code MixinServiceKnot.getResourceAsStream}/{@code findClass} delegate to the
+     * launcher's target). It must see the mod jars: the JDK's application class loader
+     * cannot be extended at runtime (Java 9+ is not a {@link URLClassLoader}), so the
+     * host keeps its own child loader over the launcher class path and the mods.
+     */
+    private final ModClassLoader target;
     private final Set<String> loadedClasses = ConcurrentHashMap.newKeySet();
     private MappingConfiguration mappings;
+
+    /** A URL class loader with a public {@code addURL}, so jars can join it after startup. */
+    private static final class ModClassLoader extends URLClassLoader {
+        ModClassLoader(URL[] urls, ClassLoader parent) {
+            super(urls, parent);
+        }
+
+        void add(URL url) {
+            super.addURL(url);
+        }
+    }
 
     public HeadlessLauncher(EnvType environment, Path gameDir, List<Path> classPath) {
         this.environment = environment;
         this.gameDir = gameDir;
-        this.classPath = List.copyOf(classPath);
-        this.target = HeadlessLauncher.class.getClassLoader();
+        this.classPath = new ArrayList<>(classPath);
+        this.target = new ModClassLoader(urls(this.classPath),
+                HeadlessLauncher.class.getClassLoader());
+    }
+
+    private static URL[] urls(List<Path> paths) {
+        return paths.stream().map(path -> {
+            try {
+                return path.toUri().toURL();
+            } catch (MalformedURLException e) {
+                throw new IllegalArgumentException("invalid class path entry " + path, e);
+            }
+        }).toArray(URL[]::new);
+    }
+
+    /**
+     * Adds a mod jar to the target loader, so Mixin can read its configs and mixin classes
+     * and so the host can define the mod's classes in the same loader Mixin sees.
+     */
+    public void addTargetJar(Path jar) {
+        if (classPath.contains(jar)) {
+            return;
+        }
+
+        try {
+            target.add(jar.toUri().toURL());
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException("invalid mod jar " + jar, e);
+        }
+
+        classPath.add(jar);
     }
 
     public Path gameDir() {
@@ -113,6 +164,38 @@ public final class HeadlessLauncher extends FabricLauncherBase {
             }
         } catch (Throwable ignored) {
             // No launcher installed yet: nothing to record.
+        }
+    }
+
+    /**
+     * The target loader of the launcher Fabric Loader currently has installed, or
+     * {@code null} when there is none. Mod classes must be defined in this loader: the
+     * mixin classes Mixin loads live here too, so a mixin's handler and its target class
+     * must not end up in two loaders (that would make a {@code checkcast} to the target
+     * type fail with {@link LinkageError}).
+     */
+    static ClassLoader currentTarget() {
+        try {
+            Object launcher = FabricLauncherBase.getLauncher();
+            if (launcher instanceof HeadlessLauncher headless) {
+                return headless.getTargetClassLoader();
+            }
+        } catch (Throwable ignored) {
+            // No launcher installed yet.
+        }
+
+        return null;
+    }
+
+    /** Adds a mod jar to the current launcher's target loader, if there is one. */
+    static void addTargetJarToCurrentLauncher(Path jar) {
+        try {
+            Object launcher = FabricLauncherBase.getLauncher();
+            if (launcher instanceof HeadlessLauncher headless) {
+                headless.addTargetJar(jar);
+            }
+        } catch (Throwable ignored) {
+            // No launcher installed yet: nothing to extend.
         }
     }
 

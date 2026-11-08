@@ -430,19 +430,23 @@ public final class Discovery {
             System.err.println("horizon host: mods dir does not exist: " + modsDir);
         }
 
-        ClassLoader systemCL = ClassLoader.getSystemClassLoader();
-        if (systemCL instanceof URLClassLoader urlCL) {
-            Method addURL = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
-            addURL.setAccessible(true);
+        ClassLoader target = HeadlessLauncher.currentTarget();
+        if (target != null) {
+            // The launcher's target loader is what Mixin resolves mixin configs, mixin
+            // classes and target class bytes through (MixinServiceKnot delegates all three
+            // to FabricLauncher). The JDK's application class loader cannot be extended at
+            // runtime, so the jars must be added to the launcher's own loader instead.
             for (Path jar : modJars) {
                 if (Files.isRegularFile(jar) && jar.toString().endsWith(".jar")) {
-                    addURL.invoke(urlCL, jar.toUri().toURL());
+                    HeadlessLauncher.addTargetJarToCurrentLauncher(jar);
                 }
             }
+
+            Thread.currentThread().setContextClassLoader(target);
+            return;
         }
 
-        // Also set the thread context classloader to include mod jars, so that
-        // Mixin's MixinEnvironment can find config files and mixin classes.
+        // No launcher yet (a fixture host): keep the jars visible through a context loader.
         ClassLoader modCL = new URLClassLoader(
                 modJars.stream()
                         .filter(p -> Files.isRegularFile(p) && p.toString().endsWith(".jar"))
@@ -473,14 +477,20 @@ public final class Discovery {
         addConfig.setAccessible(true);
 
         int registered = 0;
+        System.err.println("horizon host: mixin config scan over "
+                + loader.getAllMods().size() + " mod(s), env " + environment);
         for (var mod : loader.getAllMods()) {
             try {
                 Object metadata = mod.getMetadata();
                 if (!(metadata instanceof LoaderModMetadata)) {
+                    System.err.println("horizon host: mod " + metadata.getClass().getName()
+                            + " is not a LoaderModMetadata");
                     continue;
                 }
                 LoaderModMetadata meta = (LoaderModMetadata) metadata;
                 Collection<String> configs = meta.getMixinConfigs(environment);
+                System.err.println("horizon host: mod " + meta.getId() + " (" + meta.getType()
+                        + ") mixins=" + configs);
                 if (configs == null) {
                     continue;
                 }
@@ -491,8 +501,12 @@ public final class Discovery {
                                 + " for mod " + meta.getId());
                         registered++;
                     } catch (Throwable t) {
+                        Throwable cause = t;
+                        while (cause.getCause() != null && cause.getCause() != cause) {
+                            cause = cause.getCause();
+                        }
                         System.err.println("horizon host: failed to register mixin config "
-                                + config + " for mod " + meta.getId() + ": " + t);
+                                + config + " for mod " + meta.getId() + ": " + cause);
                     }
                 }
             } catch (Throwable t) {
@@ -554,6 +568,8 @@ public final class Discovery {
                     .getMethod("getDefaultEnvironment").invoke(null);
             System.err.println("horizon host: default env phase: "
                     + phaseEnv.getClass().getMethod("getPhase").invoke(phaseEnv));
+            System.err.println("horizon host: mixin side: "
+                    + phaseEnv.getClass().getMethod("getSide").invoke(phaseEnv));
             Object curEnv = Class.forName("org.spongepowered.asm.mixin.MixinEnvironment")
                     .getMethod("getCurrentEnvironment").invoke(null);
             System.err.println("horizon host: current env phase: "

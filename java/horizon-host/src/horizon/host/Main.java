@@ -59,6 +59,17 @@ public final class Main {
             return;
         }
 
+        // One unreadable or unapplicable mixin config must not disable every other
+        // mod's mixins. Mixin reads this option once, when it constructs the default
+        // environment, and then downgrades a required config's prepare/apply failure
+        // from fatal (MixinPrepareError / MixinApplyError) to a warning that drops the
+        // config. The option's property is built from its parents, so the environment
+        // option's key is "mixin.env" and this one is "mixin.env.ignoreRequired".
+        // The host logs the failing mod and config on stderr either way.
+        if (System.getProperty("mixin.env.ignoreRequired") == null) {
+            System.setProperty("mixin.env.ignoreRequired", "true");
+        }
+
         int protocol = intOption(options, "protocol", Wire.PROTOCOL_VERSION);
         String gameVersion = options.getOrDefault("game-version", "unknown");
         int side = side(options.getOrDefault("side", "client"));
@@ -89,8 +100,15 @@ public final class Main {
             launcherField.setAccessible(true);
             Object launcher = launcherField.get(null);
             if (launcher == null) {
+                // Mixin derives its side from the launcher (MixinServiceKnot.getSideName
+                // -> FabricLauncherBase.getLauncher().getEnvironmentType()), so a host
+                // started with --side server must not report CLIENT or server-only
+                // mixin configs would be applied on a client and vice versa.
+                net.fabricmc.api.EnvType envType = side == Wire.SIDE_SERVER
+                        ? net.fabricmc.api.EnvType.SERVER
+                        : net.fabricmc.api.EnvType.CLIENT;
                 launcher = new HeadlessLauncher(
-                        net.fabricmc.api.EnvType.CLIENT,
+                        envType,
                         Paths.get("."),
                         new ArrayList<>());
                 launcherBaseClass.getMethod("setLauncher",
@@ -144,10 +162,18 @@ public final class Main {
                             wire.write(new Wire.ClassLoaded(clazz.getName()));
                             continue;
                         } else {
-                            java.net.URL[] urls = { Paths.get(loadClass.jarPath()).toUri().toURL() };
-                            String jarKey = loadClass.jarPath();
-                            loader = loadedClassLoaders.computeIfAbsent(jarKey,
-                                    key -> new java.net.URLClassLoader(urls, ClassLoader.getSystemClassLoader()));
+                            // Mod classes belong in the launcher's target loader: that is the
+                            // loader Mixin resolves the mod's mixin classes through, so a mixin
+                            // handler and its target must be defined by the same loader. A
+                            // per-jar loader would make a checkcast to the target type fail.
+                            loader = HeadlessLauncher.currentTarget();
+                            if (loader == null) {
+                                java.net.URL[] urls = { Paths.get(loadClass.jarPath()).toUri().toURL() };
+                                String jarKey = loadClass.jarPath();
+                                loader = loadedClassLoaders.computeIfAbsent(jarKey,
+                                        key -> new java.net.URLClassLoader(urls,
+                                                ClassLoader.getSystemClassLoader()));
+                            }
 
                             // Read raw class bytes from the jar so we can run Mixin transformations
                             String classPath = loadClass.className().replace('.', '/') + ".class";
@@ -157,6 +183,19 @@ public final class Main {
                                             "Class not found in jar: " + classPath);
                                 }
                                 classBytes = is.readAllBytes();
+                            }
+
+                            // If the class is already defined, the JVM cannot transform it any
+                            // more. That is the "target loaded too early" condition; report it
+                            // instead of poisoning the loader with a duplicate definition.
+                            Class<?> existing = loadedClass(loader, loadClass.className());
+                            if (existing != null) {
+                                System.err.println("horizon host: " + loadClass.className()
+                                        + " was already loaded; Mixin cannot transform it");
+                                loadedClasses.put(loadClass.className(), existing);
+                                HeadlessLauncher.markLoadedOnCurrentLauncher(loadClass.className());
+                                wire.write(new Wire.ClassLoaded(existing.getName()));
+                                continue;
                             }
                         }
 
@@ -267,7 +306,7 @@ public final class Main {
             IMixinTransformer mixinTransformer =
                     (IMixinTransformer) transformer;
             byte[] transformed = mixinTransformer.transformClassBytes(
-                    "horizon-host", className, bytes);
+                    className, className, bytes);
             if (transformed != bytes && transformed.length != bytes.length) {
                 System.err.println("horizon host: Mixin transformed "
                         + className + " (" + bytes.length + " -> "
@@ -288,6 +327,18 @@ public final class Main {
                 "defineClass", String.class, byte[].class, int.class, int.class);
         defineClass.setAccessible(true);
         return (Class<?>) defineClass.invoke(loader, className, bytes, 0, bytes.length);
+    }
+
+    /** The class a loader already defined, or {@code null} when it has not. */
+    private static Class<?> loadedClass(ClassLoader loader, String className) {
+        try {
+            Method findLoadedClass = ClassLoader.class.getDeclaredMethod(
+                    "findLoadedClass", String.class);
+            findLoadedClass.setAccessible(true);
+            return (Class<?>) findLoadedClass.invoke(loader, className);
+        } catch (Throwable t) {
+            return null;
+        }
     }
 
     private static Map<String, String> parse(String[] args) {
