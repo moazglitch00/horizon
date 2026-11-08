@@ -139,6 +139,7 @@ public final class Main {
                             // System class - just load it normally
                             Class<?> clazz = Class.forName(loadClass.className());
                             loadedClasses.put(loadClass.className(), clazz);
+                            HeadlessLauncher.markLoadedOnCurrentLauncher(loadClass.className());
                             System.err.println("horizon host: loaded " + clazz.getName());
                             wire.write(new Wire.ClassLoaded(clazz.getName()));
                             continue;
@@ -166,6 +167,7 @@ public final class Main {
                         Class<?> clazz = defineClassViaReflection(
                                 loader, loadClass.className(), classBytes);
                         loadedClasses.put(loadClass.className(), clazz);
+                        HeadlessLauncher.markLoadedOnCurrentLauncher(loadClass.className());
                         System.err.println("horizon host: loaded " + clazz.getName());
                         wire.write(new Wire.ClassLoaded(clazz.getName()));
                     } catch (Throwable t) {
@@ -185,7 +187,15 @@ public final class Main {
                         wire.write(new Wire.InvokeResult(
                                 result == null ? "null" : result.toString()));
                     } catch (Throwable t) {
-                        wire.write(new Wire.Fatal(t.getClass().getName() + ": " + t.getMessage()));
+                        Throwable cause = t;
+                        while (cause.getCause() != null && cause.getCause() != cause) {
+                            cause = cause.getCause();
+                        }
+                        System.err.println("horizon host: invoke method failed for "
+                                + invokeMethod.className() + "." + invokeMethod.methodName());
+                        t.printStackTrace();
+                        wire.write(new Wire.Fatal(t.getClass().getName() + ": "
+                                + (cause.getMessage() != null ? cause.getMessage() : t.getMessage())));
                     }
                 } else if (frame instanceof Wire.Entrypoint entrypoint) {
                     String result = Entrypoints.invoke(

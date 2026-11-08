@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
@@ -30,6 +32,7 @@ public final class HeadlessLauncher extends FabricLauncherBase {
     private final Path gameDir;
     private final List<Path> classPath;
     private final ClassLoader target;
+    private final Set<String> loadedClasses = ConcurrentHashMap.newKeySet();
     private MappingConfiguration mappings;
 
     public HeadlessLauncher(EnvType environment, Path gameDir, List<Path> classPath) {
@@ -80,12 +83,44 @@ public final class HeadlessLauncher extends FabricLauncherBase {
 
     @Override
     public boolean isClassLoaded(String name) {
-        throw launchOnly("isClassLoaded", "discovery loads no game classes");
+        // The headless host has no real class loader behind the launcher's target:
+        // classes are loaded on demand by the engine's LOAD_CLASS frames. Track the
+        // ones loaded through the host so Mixin's "target loaded too early" audit
+        // sees the truth instead of failing.
+        return loadedClasses.contains(name);
+    }
+
+    /** Records a class as loaded, mirroring what a launching class loader would know. */
+    void markClassLoaded(String name) {
+        if (name != null) {
+            loadedClasses.add(name);
+        }
+    }
+
+    /**
+     * Records a class the host defined by hand as loaded, on whichever
+     * {@link HeadlessLauncher} Fabric Loader currently has installed.
+     *
+     * <p>The host defines transformed classes with a reflective
+     * {@code ClassLoader.defineClass}, which the launcher cannot see. Telling it
+     * keeps {@link #isClassLoaded(String)} truthful for Mixin's audit.
+     */
+    static void markLoadedOnCurrentLauncher(String name) {
+        try {
+            Object launcher = FabricLauncherBase.getLauncher();
+            if (launcher instanceof HeadlessLauncher headless) {
+                headless.markClassLoaded(name);
+            }
+        } catch (Throwable ignored) {
+            // No launcher installed yet: nothing to record.
+        }
     }
 
     @Override
     public Class<?> loadIntoTarget(String name) throws ClassNotFoundException {
-        return Class.forName(name, false, target);
+        Class<?> clazz = Class.forName(name, false, target);
+        markClassLoaded(name);
+        return clazz;
     }
 
     @Override

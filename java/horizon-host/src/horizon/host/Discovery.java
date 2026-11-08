@@ -31,6 +31,7 @@ import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -107,9 +108,26 @@ public final class Discovery {
         // any mod code can run.
         loader.load();
 
-        // Initialise Mixin: scan mod jars for mixin configs, register them,
-        // then initialise the Mixin environment so that bytecode transformations
-        // can be applied when classes are loaded via LOAD_CLASS.
+        // Fabric's own bootstrap (FabricMixinBootstrap, normally run from the Knot
+        // launcher's constructor) scans the loaded mods for mixin configs. The
+        // HeadlessLauncher used here never constructs a Knot, so run it explicitly.
+        // It can fail on bundled mods (mixinextras) whose configs reference classes
+        // unavailable in this headless host; we catch and continue with our own
+        // resilient discovery below.
+        try {
+            net.fabricmc.loader.impl.launch.FabricMixinBootstrap.init(environment, loader);
+        } catch (Throwable t) {
+            System.err.println("horizon host: FabricMixinBootstrap.init failed: " + t);
+        }
+
+        // Discover and register mixin configs from every loaded mod. This is
+        // resilient to individual config failures: one bad config never stops
+        // another mod's mixins from being applied.
+        registerMixinConfigs(loader, environment);
+
+        // Initialise Mixin: register configs, initialise the environment, then
+        // move the phase to DEFAULT (runtime) so bytecode transformations apply
+        // when classes are loaded via LOAD_CLASS.
         initialiseMixinEnvironment();
 
         List<String> disabled = new ArrayList<>();
@@ -438,15 +456,65 @@ public final class Discovery {
     }
 
     /**
+     * Discover and register mixin configs from every loaded mod.
+     *
+     * <p>Reads each mod's {@code fabric.mod.json} {@code mixins} array via
+     * {@link LoaderModMetadata#getMixinConfigs(EnvType)} and registers each
+     * config with Mixin via {@code Mixins#addConfiguration(String)}. Failures
+     * are logged per-config and never abort the whole discovery: a bundled mod
+     * such as mixinextras whose config references classes unavailable in this
+     * headless host must not prevent other mods' mixins from being applied.
+     */
+    private static void registerMixinConfigs(FabricLoaderImpl loader, EnvType environment)
+            throws Exception {
+        Class<?> mixinsClass = Class.forName("org.spongepowered.asm.mixin.Mixins");
+        java.lang.reflect.Method addConfig =
+                mixinsClass.getDeclaredMethod("addConfiguration", String.class);
+        addConfig.setAccessible(true);
+
+        int registered = 0;
+        for (var mod : loader.getAllMods()) {
+            try {
+                Object metadata = mod.getMetadata();
+                if (!(metadata instanceof LoaderModMetadata)) {
+                    continue;
+                }
+                LoaderModMetadata meta = (LoaderModMetadata) metadata;
+                Collection<String> configs = meta.getMixinConfigs(environment);
+                if (configs == null) {
+                    continue;
+                }
+                for (String config : configs) {
+                    try {
+                        addConfig.invoke(null, config);
+                        System.err.println("horizon host: registered mixin config " + config
+                                + " for mod " + meta.getId());
+                        registered++;
+                    } catch (Throwable t) {
+                        System.err.println("horizon host: failed to register mixin config "
+                                + config + " for mod " + meta.getId() + ": " + t);
+                    }
+                }
+            } catch (Throwable t) {
+                String modName;
+                try { modName = mod.getMetadata().getId(); } catch (Throwable ignored) { modName = "<unknown>"; }
+                System.err.println("horizon host: could not read mixin configs for mod "
+                        + modName + ": " + t);
+            }
+        }
+        System.err.println("horizon host: " + registered + " mixin config(s) registered");
+    }
+
+    /**
      * Initialise the Mixin environment so that
      * {@link org.spongepowered.asm.mixin.transformer.IMixinTransformer#transformClassBytes}
      * works when classes are loaded via {@link Main#loadClass}.
      *
-     * <p>Mixin configuration registration is handled by Fabric Loader itself
-     * during {@link FabricLoaderImpl#load()} — it reads each mod's
-     * {@code fabric.mod.json} and registers the declared mixin configs via
-     * {@code FabricMixinBootstrap.init()}. This method only ensures the
-     * environment is initialised.
+     * <p>Mixin configuration registration is handled by {@link #registerMixinConfigs}
+     * which reads each mod's {@code fabric.mod.json} and registers the declared
+     * mixin configs via {@code Mixins#addConfiguration(String)}. This method
+     * ensures the environment is initialised and sitting in the runtime phase
+     * where mixins apply.
      */
     private static void initialiseMixinEnvironment() throws Exception {
         MixinBootstrap.init();
@@ -462,7 +530,45 @@ public final class Discovery {
             }
             System.err.println("horizon host: Mixin environment was already initialised");
         }
+
+        // Fabric Loader's bootstrap leaves the Mixin phase at the service's initial
+        // phase (PREINIT). Transformations must run in the runtime phase (DEFAULT).
+        // MixinEnvironment.init() is a no-op once the environment has been initialised,
+        // so move the phase explicitly.
+        try {
+            java.lang.reflect.Method gotoPhase = MixinEnvironment.class
+                    .getDeclaredMethod("gotoPhase", MixinEnvironment.Phase.class);
+            gotoPhase.setAccessible(true);
+            gotoPhase.invoke(null, MixinEnvironment.Phase.DEFAULT);
+        } catch (Throwable t) {
+            System.err.println("horizon host: could not move Mixin phase to DEFAULT: "
+                    + t);
+        }
+
         System.err.println("horizon host: Mixin environment initialised");
+        try {
+            Class<?> mixinsClass = Class.forName("org.spongepowered.asm.mixin.Mixins");
+            System.err.println("horizon host: Mixin configs registered: "
+                    + mixinsClass.getMethod("getConfigs").invoke(null));
+            Object phaseEnv = Class.forName("org.spongepowered.asm.mixin.MixinEnvironment")
+                    .getMethod("getDefaultEnvironment").invoke(null);
+            System.err.println("horizon host: default env phase: "
+                    + phaseEnv.getClass().getMethod("getPhase").invoke(phaseEnv));
+            Object curEnv = Class.forName("org.spongepowered.asm.mixin.MixinEnvironment")
+                    .getMethod("getCurrentEnvironment").invoke(null);
+            System.err.println("horizon host: current env phase: "
+                    + curEnv.getClass().getMethod("getPhase").invoke(curEnv));
+            Class<?> envClass = Class.forName("org.spongepowered.asm.mixin.MixinEnvironment");
+            Field transformerField = envClass.getDeclaredField("transformer");
+            transformerField.setAccessible(true);
+            Object transformerObj = transformerField.get(null);
+            System.err.println("horizon host: transformer: " + transformerObj);
+            System.err.println("horizon host: unvisited mixin configs: "
+                    + Class.forName("org.spongepowered.asm.mixin.Mixins")
+                            .getMethod("getUnvisitedCount").invoke(null));
+        } catch (Throwable t) {
+            System.err.println("horizon host: mixin diag failed: " + t);
+        }
     }
 
     private static <T> Collection<T> nullToEmpty(Collection<T> value) {
